@@ -31,7 +31,7 @@ async function main() {
     var canvas = document.querySelector("#c");
     var gl = canvas.getContext("webgl2");
     if (!gl) {
-        print("There is a problem with your webgl-version: -no webgl2 available");
+        console.log("There is a problem with your webgl-version: -no webgl2 available");
     }
     var reader = new FileReader();
     reader.onload = function (event) {
@@ -117,7 +117,7 @@ async function main() {
     // draw
     var primitiveType = gl.TRIANGLES;
     var offset = 0;
-    var count = positions.length / 2;
+    var count = positions.length / 3;
     gl.drawArrays(primitiveType, offset, count);
 }
 
