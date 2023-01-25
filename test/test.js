@@ -38,40 +38,11 @@ async function main() {
         console.log('File content:', event.target.result);
     };
 
-    var one = await fetch("./shader/test.vert")
+    var one = await fetch("./shader/test.vert",  {cache: "no-store"})
     var vertexShaderSource = await one.text()
 
-    one = await fetch("./shader/test.frag")
+    one = await fetch("./shader/test.frag",  {cache: "no-store"})
     var fragmentShaderSource = await one.text()
-//     var vertexShaderSource = `#version 300 es
-
-// // an attribute is an input (in) to a vertex shader.
-// // It will receive data from a buffer
-// in vec4 a_position;
-
-// // all shaders have a main function
-// void main() {
-
-//   // gl_Position is a special variable a vertex shader
-//   // is responsible for setting
-//   gl_Position = a_position;
-// }
-// `;
-
-// var fragmentShaderSource = `#version 300 es
-
-// // fragment shaders don't have a default precision so we need
-// // to pick one. highp is a good default. It means "high precision"
-// precision highp float;
-
-// // we need to declare an output for the fragment shader
-// out vec4 outColor;
-
-// void main() {
-//   // Just set the output to a constant redish-purple
-//   outColor = vec4(1, 0, 0.5, 1);
-// }
-// `;
 
     console.log(vertexShaderSource);
     console.log(fragmentShaderSource);
@@ -94,9 +65,19 @@ async function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
     var positions = [
-        0, 0,
-        0, 0.5,
-        0.7, 0,
+        0, 0, 0,
+        0, 0.15, 0.15,
+        0.17, 0, 0.17,
+        0.2, 0.2, 0.2,
+        0.4, 0.2, 0.2,
+        0.2, 0.5, 0.2,    
+        0.2, 0.2, 0.2,
+        0.7, 0.6, 0.6,
+        0.6, 0.7, 0.7,
+          
+        -0.6, -0.6, -0.6,
+        -0.7, -0.6, -0.6,
+        -0.6, -0.7, -0.7
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -110,7 +91,7 @@ async function main() {
     gl.enableVertexAttribArray(positionAttributeLocation);
 
     // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-    var size = 2;          // 2 components per iteration
+    var size = 3;          // 2 components per iteration
     var type = gl.FLOAT;   // the data is 32bit floats
     var normalize = false; // don't normalize the data
     var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
@@ -136,7 +117,7 @@ async function main() {
     // draw
     var primitiveType = gl.TRIANGLES;
     var offset = 0;
-    var count = 3;
+    var count = positions.length / 2;
     gl.drawArrays(primitiveType, offset, count);
 }
 
