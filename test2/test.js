@@ -1,4 +1,5 @@
 import { getKeys, getElement } from "../hdf5_loader/hdf5-loader.js";
+import { drawOutline} from "../utils/outline.js";
 
 const file_url = "../data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
 const filename = "XYZ"
@@ -35,7 +36,7 @@ var createScene = async function(){
     allCoords = structuredClone(f.get(groupPath).value)
     let shape = f.get(groupPath).shape;
     console.log(shape[0]);
-    for(let i = 0; i < shape[0]; i += 1000) {
+    for(let i = 0; i < shape[0]; i += 10000) {
         let coords = getElement(f, partType+"/"+getKeys(f, partType)[0], i);            
         var sphere = BABYLON.MeshBuilder.CreateSphere('sphere'+i, {segments: 1, diameter: sphereHeight}, scene);
         sphere.material = myMaterial;
@@ -50,22 +51,24 @@ var createScene = async function(){
 
     allCoords = math.reshape(allCoords, shape);
 
-    var minCoords = math.min(allCoords, 0);
-    var maxCoords = math.max(allCoords, 0);
+    // var minCoords = math.min(allCoords, 0);
+    // var maxCoords = math.max(allCoords, 0);
 
-    console.log([ minCoords, maxCoords]);
+    // console.log([ minCoords, maxCoords]);
 
-    var boxSize = math.subtract(maxCoords, minCoords);
-    console.log([ boxSize]);
+    // var boxSize = math.subtract(maxCoords, minCoords);
+    // console.log([ boxSize]);
 
-    var centerOfBox = math.subtract(maxCoords, math.divide(boxSize, 2));
-    console.log([ centerOfBox]);
+    // var centerOfBox = math.subtract(maxCoords, math.divide(boxSize, 2));
+    // console.log([ centerOfBox]);
 
-    var box = BABYLON.MeshBuilder.CreateBox("box", {width: boxSize[0], height: boxSize[1] , depth:boxSize[2]}, scene);
-    box.material = myMaterial;  
-    box.position.x = centerOfBox[0];
-    box.position.y = centerOfBox[1];
-    box.position.z = centerOfBox[2];
+    // var box = BABYLON.MeshBuilder.CreateBox("box", {width: boxSize[0], height: boxSize[1] , depth:boxSize[2]}, scene);
+    // box.material = myMaterial;  
+    // box.position.x = centerOfBox[0];
+    // box.position.y = centerOfBox[1];
+    // box.position.z = centerOfBox[2];
+
+    drawOutline(allCoords, scene, myMaterial);
 
     // var camera = new BABYLON.UniversalCamera('camera1', new BABYLON.Vector3(math.mean(allCoords, 0)), scene);
     // var camera = new BABYLON.UniversalCamera('camera1', new BABYLON.Vector3(allCoords[1]), scene);
@@ -73,7 +76,7 @@ var createScene = async function(){
     var camera = new BABYLON.ArcRotateCamera("Camera",  -Math.PI / 2, Math.PI / 1.65, 1, test , scene);
     // Target the camera to scene origin
     // camera.setTarget(new BABYLON.Vector3(allCoords[0][0], allCoords[0][1], allCoords[0][2]));
-    camera.setTarget(new BABYLON.Vector3(minCoords[0], minCoords[1], minCoords[2]));
+    camera.setTarget(new BABYLON.Vector3(allCoords[0][0], allCoords[0][1], allCoords[0][2]));
     // Attach the camera to the canvas
     camera.attachControl(canvas, true);
 
