@@ -1,3 +1,9 @@
+import { getKeys, getElement } from "../hdf5_loader/hdf5-loader.js";
+
+const file_url = "../data/combined_Velocities_tng50-4-subbox2.hdf5";
+const filename = "XYZ"
+const partType = "PartType0"
+
 // Get the canvas DOM element
 var canvas = document.getElementById('renderCanvas');
 // Load the 3D engine
@@ -18,12 +24,32 @@ var createScene = function(){
     scene.createDefaultEnvironment();
     
     // Create a built-in "sphere" shape using the SphereBuilder
-    var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {segments: 1, diameter: 1}, scene);
+    var sphereHeight = 1;
     const myMaterial = new BABYLON.StandardMaterial("myMaterial", scene);
     myMaterial.wireframe = true;
-    sphere.material = myMaterial;
-    // Move the sphere upward 1/2 of its height
-    sphere.position.y = 1;
+
+
+    fetch(file_url)
+    .then(function(response) { 
+        return response.arrayBuffer() 
+    })
+    .then(function(buffer) {
+        let f = new hdf5.File(buffer, filename);
+        for(let i = 0; i < 10; i++) {
+            let coords = getElement(f, partType+"/"+getKeys(f, partType)[0], 1);
+
+            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere'+i, {segments: 1, diameter: sphereHeight}, scene);
+            sphere.material = myMaterial;
+            sphere.position.x = coords[0];
+            sphere.position.y = coords[1];
+            sphere.position.z = coords[2];
+            // Move the sphere upward 1/2 of its height
+            sphere.position.y += sphereHeight;
+            
+        }
+    });
+
+
     // Return the created scene
     return scene;
 }
