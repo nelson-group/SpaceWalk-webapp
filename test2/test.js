@@ -51,23 +51,6 @@ var createScene = async function(){
 
     allCoords = math.reshape(allCoords, shape);
 
-    // var minCoords = math.min(allCoords, 0);
-    // var maxCoords = math.max(allCoords, 0);
-
-    // console.log([ minCoords, maxCoords]);
-
-    // var boxSize = math.subtract(maxCoords, minCoords);
-    // console.log([ boxSize]);
-
-    // var centerOfBox = math.subtract(maxCoords, math.divide(boxSize, 2));
-    // console.log([ centerOfBox]);
-
-    // var box = BABYLON.MeshBuilder.CreateBox("box", {width: boxSize[0], height: boxSize[1] , depth:boxSize[2]}, scene);
-    // box.material = myMaterial;  
-    // box.position.x = centerOfBox[0];
-    // box.position.y = centerOfBox[1];
-    // box.position.z = centerOfBox[2];
-
     drawOutline(allCoords, scene, myMaterial);
 
     // var camera = new BABYLON.UniversalCamera('camera1', new BABYLON.Vector3(math.mean(allCoords, 0)), scene);
