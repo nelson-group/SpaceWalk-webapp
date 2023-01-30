@@ -1,15 +1,15 @@
-const file_url = "../data/combined_Velocities_tng50-4-subbox2.hdf5"
-const filename = "XYZ"
-const partType = "PartType0"
+// const file_url = "../data/combined_Velocities_tng50-4-subbox2.hdf5"
+// const filename = "XYZ"
+// const partType = "PartType0"
 
-fetch(file_url)
-.then(function(response) { 
-    return response.arrayBuffer() 
-})
-.then(function(buffer) {
-    let f = new hdf5.File(buffer, filename);
-    console.log(getElement(f, partType+"/"+getKeys(f, partType)[0], 1));
-});
+// fetch(file_url)
+// .then(function(response) { 
+//     return response.arrayBuffer() 
+// })
+// .then(function(buffer) {
+//     let f = new hdf5.File(buffer, filename);
+//     console.log(getElement(f, partType+"/"+getKeys(f, partType)[0], 1));
+// });
 
 export function getElement(file, groupPath, index) {
     let shape = file.get(groupPath).shape;
