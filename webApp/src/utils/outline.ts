@@ -1,6 +1,8 @@
 import {min, max, divide, subtract} from "mathjs";
 
-export function drawOutline(allCoords, scene, myMaterial, log = false) {
+import { Scene, StandardMaterial, MeshBuilder } from "@babylonjs/core";
+
+export function drawOutline(allCoords: Array<Array<number>>, scene: Scene, myMaterial: StandardMaterial, log: boolean = false) {
     var minCoords = min(allCoords, 0);
     var maxCoords = max(allCoords, 0);
 
@@ -8,7 +10,7 @@ export function drawOutline(allCoords, scene, myMaterial, log = false) {
 
     var centerOfBox = subtract(maxCoords, divide(boxSize, 2));
 
-    var box = BABYLON.MeshBuilder.CreateBox(
+    var box = MeshBuilder.CreateBox(
         "outline",
         { width: boxSize[0], height: boxSize[1], depth: boxSize[2] },
         scene

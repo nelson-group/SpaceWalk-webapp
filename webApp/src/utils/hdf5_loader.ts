@@ -1,14 +1,15 @@
-import { File } from "jsfive";
+/// <reference path="tsfive.d.ts"/>
+import * as hdf5 from "jsfive";
 
-export async function getHDF5File(file_url, filename) {
+export async function getHDF5File(file_url: string, filename: string) {
     let buffer = await fetch(file_url)
     .then(function(response) { 
         return response.arrayBuffer() 
     });
-    return new File(buffer, filename);
+    return new hdf5.File(buffer, filename);
 }
 
-export function getElement(file, groupPath, index) {
+export function getElement(file: hdf5.File, groupPath: string, index: number) {
     let shape = file.get(groupPath).shape;
     if(shape.length != 2) {
         alert("Shape is strange: " + shape + "\nShould be of type [x, y]");
@@ -22,6 +23,6 @@ export function getElement(file, groupPath, index) {
     return file.get(groupPath).value.slice(index * offset, index * offset + offset);
 }
 
-export function getKeys(file, groupPath) {
+export function getKeys(file: hdf5.File, groupPath: string) {
     return file.get(groupPath).keys;
 }
