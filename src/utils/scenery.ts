@@ -4,7 +4,7 @@ import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI } from "./gui";
 
-import { Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color4, Engine, Particle } from "@babylonjs/core";
+import { Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color4, Engine, CloudPoint } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3) {
@@ -37,7 +37,7 @@ export async function createScene(file_url: string, filename: string, partType: 
     else {
         var min_color = new Color4(0, 0, 0, 0);
         var max_color = new Color4(1, 1, 1, 1);
-        var positionAndColorParticles = function (particle: Particle, i: number, _s: number) {
+        var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {
             particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
             particle.color = calcColor(max_color, min_color, allDensitiesGlobal[i]);
         }
