@@ -2,8 +2,10 @@ import { getKeys, getElement, getHDF5File } from "./hdf5_loader";
 import { reshape, max, divide } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
+import { calcColor, buildGUI } from "./gui";
 
 import { Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color4, Engine, Particle } from "@babylonjs/core";
+import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3) {
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, 1, cameraPosition, scene);
@@ -33,15 +35,20 @@ export async function createScene(file_url: string, filename: string, partType: 
         drawSpheres(scene, coordinatesShape, allCoordsGlobal, wireFrameMaterial);
     }
     else {
+        var min_color = new Color4(0, 0, 0, 0);
+        var max_color = new Color4(1, 1, 1, 1);
         var positionAndColorParticles = function (particle: Particle, i: number, _s: number) {
             particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
-            particle.color = new Color4(allDensitiesGlobal[i], allDensitiesGlobal[i], allDensitiesGlobal[i], allDensitiesGlobal[i]);
+            particle.color = calcColor(max_color, min_color, allDensitiesGlobal[i]);
         }
         var pcs = new PointsCloudSystem("pcs", 2, scene);
         pcs.addPoints(coordinatesShape[0], positionAndColorParticles);
         pcs.buildMeshAsync().then((mesh) => {
             mesh.hasVertexAlpha = true;
         });
+
+        var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        buildGUI(advancedTexture, pcs, new Color4(0, 0, 0, 0), new Color4(1, 1, 1, 1), allDensitiesGlobal);
     }
 
     if (displayOutline) {
