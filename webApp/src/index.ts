@@ -1,6 +1,6 @@
-import { createScene } from "./utils/scenery.js";
+import { createScene } from "./utils/scenery";
 
-const file_url = "../data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
+const file_url = "data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
 const filename = "XYZ";
 const partType = "PartType0";
 

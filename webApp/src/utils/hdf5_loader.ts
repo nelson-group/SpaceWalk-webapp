@@ -1,12 +1,14 @@
-/// <reference path="tsfive.d.ts"/>
-import * as hdf5 from "jsfive";
+// Import for functionality
+var hd = require("jsfive");
+// Import for type hints
+import { hdf5 } from "./mod"
 
 export async function getHDF5File(file_url: string, filename: string) {
     let buffer = await fetch(file_url)
     .then(function(response) { 
         return response.arrayBuffer() 
     });
-    return new hdf5.File(buffer, filename);
+    return new hd.File(buffer, filename);
 }
 
 export function getElement(file: hdf5.File, groupPath: string, index: number) {

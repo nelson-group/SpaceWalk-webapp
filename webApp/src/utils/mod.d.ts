@@ -1,5 +1,3 @@
-import * as hdf5js from "https://cdn.jsdelivr.net/gh/usnistgov/jsfive@master/index.js";
-
 declare module hdf5 {
     export const __vesrion__: string;
     
@@ -32,6 +30,7 @@ declare module hdf5 {
         private userblock_size: number;
         
         public constructor (fh: any, filename?: string);
+        public get (path: str): any;
     }
     
     type numbers = Array<number>;
@@ -85,3 +84,5 @@ declare module hdf5 {
         seek();
     }
 }
+
+export {hdf5};
