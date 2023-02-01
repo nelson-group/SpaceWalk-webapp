@@ -14,7 +14,7 @@ var allCoordsGlobal;
 var allDensitiesGlobal;
 
 var pointFunc = function(particle, i, s) {        
-      particle.position = new BABYLON.Vector3(allCoordsGlobal[i][0],allCoordsGlobal[i][1],allCoordsGlobal[i][2]);
+    particle.position = new BABYLON.Vector3(allCoordsGlobal[i][0],allCoordsGlobal[i][1],allCoordsGlobal[i][2]);
     // particle.position = new BABYLON.Vector3(particle.groupId * 0.5 + 0.25 * Math.random(), i / 5000, 0.25 * Math.random()); 
     particle.color = new BABYLON.Color4(allDensitiesGlobal[i], allDensitiesGlobal[i], allDensitiesGlobal[i], allDensitiesGlobal[i]);
   }
@@ -104,8 +104,10 @@ var createScene = async function(){
 
 // call the createScene function
 var scene = await createScene();
+let divFps = document.getElementById("fps");
 // run the render loop
 engine.runRenderLoop(function(){
+    divFps.innerHTML = engine.getFps().toFixed() + " fps";
     scene.render();
 });
 // the canvas/window resize event handler
