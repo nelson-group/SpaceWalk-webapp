@@ -1,5 +1,5 @@
-import { getKeys, getElement, getHDF5File } from "./hdf5_loader";
-import { reshape, max, divide } from "mathjs";
+import { Hdf5File } from "./hdf5_loader";
+import { reshape, max, divide, MathType } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI } from "./gui";
@@ -21,15 +21,16 @@ export async function createScene(file_url: string, filename: string, partType: 
 
     var coordinatesPath = partType + "/Coordinates";
     var densityPath = partType + "/Density";
-    var f = await getHDF5File(file_url, filename);
 
-    var allCoords = structuredClone(f.get(coordinatesPath).value);
-    var coordinatesShape = f.get(coordinatesPath).shape;
-    var allCoordsGlobal = reshape(allCoords, coordinatesShape);
-    var allDensitiesGlobal = structuredClone(f.get(densityPath).value);
+    var hdf5File = new Hdf5File();
+    await hdf5File.open(file_url, filename);
 
-    var maxDensity = max(allDensitiesGlobal);
-    allDensitiesGlobal = divide(allDensitiesGlobal, maxDensity);
+    var allCoordsGlobal = hdf5File.getElements(coordinatesPath);
+    var coordinatesShape = hdf5File.getElementsShape(coordinatesPath);
+    var allDensitiesGlobal = hdf5File.getElements(densityPath) as Array<number>;
+
+    var maxDensity = max(allDensitiesGlobal) as number;
+    allDensitiesGlobal = divide(allDensitiesGlobal, maxDensity) as Array<number>;
 
     if (!usePointCloudSystem) {
         drawSpheres(scene, coordinatesShape, allCoordsGlobal, wireFrameMaterial);
