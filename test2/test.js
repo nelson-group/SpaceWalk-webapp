@@ -101,6 +101,7 @@ var createScene = async function(){
     // Return the created scene
     return scene;
 }
+
 // call the createScene function
 var scene = await createScene();
 // run the render loop
