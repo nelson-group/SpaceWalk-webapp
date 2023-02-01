@@ -1,0 +1,24 @@
+import { createScene } from "./utils/scenery.js";
+
+const file_url = "../data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
+const filename = "XYZ";
+const partType = "PartType0";
+
+async function main() {
+    var canvas = document.getElementById('renderCanvas')!;
+    var divFPS = document.getElementById("fps");
+
+    var engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+    var scene = await createScene(file_url, filename, partType, canvas, engine, true, true);
+
+    engine.runRenderLoop(function () {
+        divFPS.innerHTML = engine.getFps().toFixed() + " fps";
+        scene.render();
+    });
+
+    window.addEventListener('resize', function () {
+        engine.resize();
+    });
+}
+
+await main();
