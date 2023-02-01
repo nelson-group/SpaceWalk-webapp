@@ -5,8 +5,8 @@ const filename = "XYZ";
 const partType = "PartType0";
 
 async function main() {
-    var canvas = document.getElementById('renderCanvas')!;
-    var divFPS = document.getElementById("fps");
+    const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
+    const divFPS = document.getElementById("fps")!;
 
     var engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     var scene = await createScene(file_url, filename, partType, canvas, engine, true, true);
