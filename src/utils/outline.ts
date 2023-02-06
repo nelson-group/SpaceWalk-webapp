@@ -1,8 +1,8 @@
 import {min, max, divide, subtract} from "mathjs";
 
-import { Scene, StandardMaterial, MeshBuilder } from "@babylonjs/core";
+import { Scene, StandardMaterial, MeshBuilder, Color3 } from "@babylonjs/core";
 
-export function drawOutline(allCoords: Array<Array<number>>, scene: Scene, myMaterial: StandardMaterial, log: boolean = false) {
+export function drawOutline(allCoords: Array<Array<number>>, scene: Scene, log: boolean = false) {
     var minCoords = min(allCoords, 0);
     var maxCoords = max(allCoords, 0);
 
@@ -15,7 +15,13 @@ export function drawOutline(allCoords: Array<Array<number>>, scene: Scene, myMat
         { width: boxSize[0], height: boxSize[1], depth: boxSize[2] },
         scene
     );
-    box.material = myMaterial;
+
+    var boxMaterial = new StandardMaterial("", scene);
+    boxMaterial.wireframe = true;
+    boxMaterial.disableLighting = true;
+    boxMaterial.emissiveColor = Color3.Black().scale(0.5);
+    box.material = boxMaterial;
+
     box.position.x = centerOfBox[0];
     box.position.y = centerOfBox[1];
     box.position.z = centerOfBox[2];

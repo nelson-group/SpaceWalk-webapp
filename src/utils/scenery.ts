@@ -3,6 +3,7 @@ import { reshape, min, max, divide, MathType } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI, ColorConfig } from "./gui";
+import { VectorFieldVisualizer } from "./arrow";
 
 import { Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color4, Engine, CloudPoint } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
@@ -57,8 +58,11 @@ export async function createScene(file_url: string, filename: string, partType: 
         buildGUI(advancedTexture, pcs, colorConfig, allDensitiesGlobal);
     }
 
+    const arrow = new VectorFieldVisualizer(scene);
+    arrow.createArrow();
+
     if (displayOutline) {
-        drawOutline(allCoordsGlobal, scene, wireFrameMaterial);
+        drawOutline(allCoordsGlobal, scene);
     }
 
     setCamera(
