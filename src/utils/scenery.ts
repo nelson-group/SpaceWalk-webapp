@@ -1,8 +1,8 @@
 import { Hdf5File } from "./hdf5_loader";
-import { reshape, max, divide, MathType } from "mathjs";
+import { reshape, min, max, divide, MathType } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
-import { calcColor, buildGUI } from "./gui";
+import { calcColor, buildGUI, ColorConfig } from "./gui";
 
 import { Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color4, Engine, CloudPoint } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
@@ -36,11 +36,16 @@ export async function createScene(file_url: string, filename: string, partType: 
         drawSpheres(scene, coordinatesShape, allCoordsGlobal, wireFrameMaterial);
     }
     else {
-        var min_color = new Color4(0, 0, 0, 0);
-        var max_color = new Color4(1, 1, 1, 1);
+        var colorConfig = {
+            "min_color": new Color4(0, 0, 0, 0),
+            "max_color": new Color4(1, 1, 1, 1),
+            "min_density": min(allDensitiesGlobal),
+            "max_density": max(allDensitiesGlobal),
+            "automatic_opacity": false,
+        };
         var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {
             particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
-            particle.color = calcColor(max_color, min_color, allDensitiesGlobal[i]);
+            particle.color = calcColor(colorConfig, allDensitiesGlobal[i]);
         }
         var pcs = new PointsCloudSystem("pcs", 2, scene);
         pcs.addPoints(coordinatesShape[0], positionAndColorParticles);
@@ -49,7 +54,7 @@ export async function createScene(file_url: string, filename: string, partType: 
         });
 
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-        buildGUI(advancedTexture, pcs, new Color4(0, 0, 0, 0), new Color4(1, 1, 1, 1), allDensitiesGlobal);
+        buildGUI(advancedTexture, pcs, colorConfig, allDensitiesGlobal);
     }
 
     if (displayOutline) {
