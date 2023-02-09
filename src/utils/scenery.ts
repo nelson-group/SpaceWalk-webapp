@@ -2,10 +2,10 @@ import { Hdf5File } from "./hdf5_loader";
 import { reshape, min, max, divide, MathType, subtract } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
-import { calcColor, buildGUI, ColorConfig } from "./gui";
+import { calcColor, buildGUI, ColorConfig, useOwnShader } from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial } from "@babylonjs/core";
+import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3) {
@@ -13,6 +13,8 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vect
     camera.setTarget(targetPosition);
     camera.attachControl(canvas, true);
 }
+
+export var originalPcsMaterial: Nullable<Material>;
 
 export async function createScene(file_url: string, filename: string, partType: string, canvas: HTMLCanvasElement, engine: Engine, usePointCloudSystem: boolean = true, displayOutline: boolean = true) {
     var scene = new Scene(engine);
@@ -46,35 +48,26 @@ export async function createScene(file_url: string, filename: string, partType: 
         };
         var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {
             particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
-            // particle.color = calcColor(colorConfig, allDensitiesGlobal[i]);
+            particle.color = calcColor(colorConfig, allDensitiesGlobal[i]); //still needed for not own shader part
             // particle.uv = new Vector2(64,64);            
         }                
 
-        var pcs = new PointsCloudSystem("pcs", 0.002, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.
+        var pcs = new PointsCloudSystem("pcs",2, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.
         pcs.addPoints(coordinatesShape[0], positionAndColorParticles);                
         var pcsMesh = await pcs.buildMeshAsync();
-        pcsMesh.hasVertexAlpha = true;                                        
-        var useOwnShader = true;
-        if (useOwnShader) {
-            pcsMesh.visibility = 1;
-            // pcsMesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
-            var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
-            attributes: ["position", "uv"],
-            uniforms: ["worldViewProjection"]                
-            });                    
-            shaderMaterial.backFaceCulling = false;            
-            shaderMaterial.pointsCloud = true;
-            pcsMesh.material = shaderMaterial;
-            pcsMesh.showBoundingBox = true;            
-        }
+        pcsMesh.hasVertexAlpha = true;                                                
+        pcsMesh.showBoundingBox = true;            
+        if (useOwnShader)       
+            originalPcsMaterial = useOwnShaderForMesh(pcsMesh, scene);
+        
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         buildGUI(advancedTexture, pcs, colorConfig, allDensitiesGlobal);
-    }
+    }    
 
     const arrow = new VectorFieldVisualizer(scene);
     arrow.createArrow();
 
-    // if (displayOutline) {
+    // if (displayOutline) { //not needed anymore since the mesh itself provides boundingboxes
     //     // drawOutline(allCoordsGlobal, scene);
     // }
 
@@ -86,6 +79,20 @@ export async function createScene(file_url: string, filename: string, partType: 
     );
 
     return scene;
+}
+
+function useOwnShaderForMesh(mesh: Mesh, scene: Scene): Nullable<Material>
+{          
+    // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
+    var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
+    attributes: ["position", "uv"],
+    uniforms: ["worldViewProjection"]                
+    });                    
+    shaderMaterial.backFaceCulling = false;            
+    shaderMaterial.pointsCloud = true;
+    let tmpMaterial = mesh.material;
+    mesh.material = shaderMaterial; 
+    return tmpMaterial;               
 }
 
 ////////////// working shader example ////////////////////////////////

@@ -5,9 +5,12 @@ import {
     CloudPoint,
 } from "@babylonjs/core";
 
-import { AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider } from "@babylonjs/gui";
+import { Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider } from "@babylonjs/gui";
 
 import { min, max } from "mathjs";
+import { originalPcsMaterial } from "./scenery";
+
+export var useOwnShader = true;
 
 export interface ColorConfig {
     max_color: Color4;
@@ -50,7 +53,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     min_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     min_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
         colorConfig.min_color.copyFrom(value.toColor4(1));
-        pcs.setParticles()
+        if(!useOwnShader)    
+            pcs.setParticles();
     });
     pcs.updateParticle = function (particle: CloudPoint) {
         particle.color = calcColor(colorConfig, density_array[particle.idx]);
@@ -73,12 +77,9 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     max_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     max_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
         colorConfig.max_color.copyFrom(value.toColor4(1));
-        pcs.setParticles()
+        if(!useOwnShader)
+            pcs.setParticles()
     });
-    pcs.updateParticle = function (particle: CloudPoint) {
-        particle.color = calcColor(colorConfig, density_array[particle.idx]);
-        return particle;
-    };
     panel.addControl(max_color_picker);
 
     let min_opacity_text = new TextBlock();
@@ -96,7 +97,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
         min_opacity_text.text = "Min Density: " + roundNumber(value);
         colorConfig.min_density = value;
         // colorConfig.min_color.a = colorConfig.min_density;
-        pcs.setParticles()
+        if(!useOwnShader)
+            pcs.setParticles()
     });
     panel.addControl(min_slider);
 
@@ -115,9 +117,30 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
         max_opacity_text.text = "Max Density: " + roundNumber(value);
         colorConfig.max_density = value;
         //colorConfig.max_color.a = colorConfig.max_density;
-        pcs.setParticles()
+        if(!useOwnShader)
+            pcs.setParticles()
     });
     panel.addControl(max_slider);
+
+    var useOwnShadercheckbox = new Checkbox();
+    useOwnShadercheckbox.width = "20px";
+    useOwnShadercheckbox.height = "20px";
+    useOwnShadercheckbox.isChecked = useOwnShader;
+    useOwnShadercheckbox.color = "green";
+    useOwnShadercheckbox.onIsCheckedChangedObservable.add(function(value) {
+        useOwnShadercheckbox.color = useOwnShadercheckbox.isChecked ? "green" : "red";
+        useOwnShader = useOwnShadercheckbox.isChecked;
+    });
+    panel.addControl(useOwnShadercheckbox);   
+
+    var ownShaderText = new TextBlock();
+    ownShaderText.text = "use own shader";
+    ownShaderText.width = "180px";
+    ownShaderText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    ownShaderText.color = "white";
+    panel.addControl(ownShaderText); 
+    
+
 }
 
 function roundNumber(number: number) {

@@ -5,6 +5,7 @@ const filename = "XYZ";
 const partType = "PartType0";
 
 import { Engine } from "@babylonjs/core";
+import { useOwnShader } from "./utils/gui";
 
 async function main() {
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
