@@ -1,11 +1,11 @@
 import { Hdf5File } from "./hdf5_loader";
-import { reshape, min, max, divide, MathType } from "mathjs";
+import { reshape, min, max, divide, MathType, subtract } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI, ColorConfig } from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color4, Engine, CloudPoint } from "@babylonjs/core";
+import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3) {
@@ -46,14 +46,27 @@ export async function createScene(file_url: string, filename: string, partType: 
         };
         var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {
             particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
-            particle.color = calcColor(colorConfig, allDensitiesGlobal[i]);
-        }
-        var pcs = new PointsCloudSystem("pcs", 2, scene);
-        pcs.addPoints(coordinatesShape[0], positionAndColorParticles);
-        pcs.buildMeshAsync().then((mesh) => {
-            mesh.hasVertexAlpha = true;
-        });
+            // particle.color = calcColor(colorConfig, allDensitiesGlobal[i]);
+            // particle.uv = new Vector2(64,64);            
+        }                
 
+        var pcs = new PointsCloudSystem("pcs", 0.002, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.
+        pcs.addPoints(coordinatesShape[0], positionAndColorParticles);                
+        var pcsMesh = await pcs.buildMeshAsync();
+        pcsMesh.hasVertexAlpha = true;                                        
+        var useOwnShader = true;
+        if (useOwnShader) {
+            pcsMesh.visibility = 1;
+            // pcsMesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
+            var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
+            attributes: ["position", "uv"],
+            uniforms: ["worldViewProjection"]                
+            });                    
+            shaderMaterial.backFaceCulling = false;            
+            shaderMaterial.pointsCloud = true;
+            pcsMesh.material = shaderMaterial;
+            pcsMesh.showBoundingBox = true;            
+        }
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         buildGUI(advancedTexture, pcs, colorConfig, allDensitiesGlobal);
     }
@@ -61,9 +74,9 @@ export async function createScene(file_url: string, filename: string, partType: 
     const arrow = new VectorFieldVisualizer(scene);
     arrow.createArrow();
 
-    if (displayOutline) {
-        drawOutline(allCoordsGlobal, scene);
-    }
+    // if (displayOutline) {
+    //     // drawOutline(allCoordsGlobal, scene);
+    // }
 
     setCamera(
         canvas,
@@ -74,3 +87,30 @@ export async function createScene(file_url: string, filename: string, partType: 
 
     return scene;
 }
+
+////////////// working shader example ////////////////////////////////
+// var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
+//     attributes: ["position", "uv","densities"],
+//     uniforms: ["worldViewProjection"]                
+// });                    
+// shaderMaterial.backFaceCulling = false;
+// var mainTexture = new Texture("data/textures/Dot.png", scene);
+
+// shaderMaterial.setTexture("textureSampler", mainTexture);
+
+// var minCoords = min(allCoordsGlobal, 0);
+// var maxCoords = max(allCoordsGlobal, 0);
+
+// var boxSize = subtract(maxCoords, minCoords);
+
+// var centerOfBox = subtract(maxCoords, divide(boxSize, 2));
+
+// var box = MeshBuilder.CreateBox(
+// "shader",
+// { width: boxSize[0], height: boxSize[1], depth: boxSize[2] },
+// scene
+// );            
+// box.material = shaderMaterial;    
+// box.position.x = centerOfBox[0];
+// box.position.y = centerOfBox[1];
+// box.position.z = centerOfBox[2];
