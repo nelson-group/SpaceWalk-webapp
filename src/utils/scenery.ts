@@ -24,7 +24,10 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vect
             // console.log(nominator + ":" + Vector3.Distance(targetPosition, camera.globalPosition));
             console.log(camera._worldMatrix);
             if (useOwnShader)
+            {
                 (mesh.material as ShaderMaterial).setFloat("distance", distance);
+                (mesh.material as ShaderMaterial).setVector3("cameraPosition", camera.globalPosition);
+            }
         });
     }
 }
@@ -110,13 +113,14 @@ function useOwnShaderForMesh(mesh: Mesh, scene: Scene, colorConfig:ColorConfig, 
     mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
     var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
     attributes: ["position", "uv", "densities"],
-    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "distance"]                
+    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "distance", "cameraPosition"]                
     });                        
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);
     shaderMaterial.setFloat("min_density", colorConfig.min_density);
     shaderMaterial.setFloat("max_density", colorConfig.max_density);    
     shaderMaterial.setFloat("distance", 1);
+    shaderMaterial.setVector3("cameraPosition", Vector3.Zero());
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
     let tmpMaterial = mesh.material;
