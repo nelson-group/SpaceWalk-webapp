@@ -1,1 +1,1 @@
-export var useOwnShader = true;
+export var useOwnShaderInit = true;

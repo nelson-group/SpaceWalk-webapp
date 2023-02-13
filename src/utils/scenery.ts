@@ -5,22 +5,21 @@ import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI, ColorConfig, useOwnShader } from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable } from "@babylonjs/core";
+import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3) {
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, 1, cameraPosition, scene);
     camera.setTarget(targetPosition);
     camera.attachControl(canvas, true);
+    camera.zoomToMouseLocation = true;
 }
 
-export var originalPcsMaterial: Nullable<Material>;
+
 
 export async function createScene(file_url: string, filename: string, partType: string, canvas: HTMLCanvasElement, engine: Engine, usePointCloudSystem: boolean = true, displayOutline: boolean = true) {
     var scene = new Scene(engine);
     scene.createDefaultLight(true);
-    const wireFrameMaterial = new StandardMaterial("wireFrameMaterial", scene);
-    wireFrameMaterial.wireframe = true;
 
     var coordinatesPath = partType + "/Coordinates";
     var densityPath = partType + "/Density";
@@ -34,14 +33,17 @@ export async function createScene(file_url: string, filename: string, partType: 
 
     var maxDensity = max(allDensitiesGlobal) as number;
     allDensitiesGlobal = divide(allDensitiesGlobal, maxDensity) as Array<number>;
+    const axes = new AxesViewer(scene, 100);
 
     if (!usePointCloudSystem) {
+        const wireFrameMaterial = new StandardMaterial("wireFrameMaterial", scene);
+        wireFrameMaterial.wireframe = true;
         drawSpheres(scene, coordinatesShape, allCoordsGlobal, wireFrameMaterial);
     }
     else {
         var colorConfig = {
-            "min_color": new Color4(0, 0, 0, 0),
-            "max_color": new Color4(1, 1, 1, 1),
+            "min_color": new Color3(0, 0, 0),
+            "max_color": new Color3(1, 1, 1),
             "min_density": min(allDensitiesGlobal),
             "max_density": max(allDensitiesGlobal),
             "automatic_opacity": false,
@@ -56,12 +58,18 @@ export async function createScene(file_url: string, filename: string, partType: 
         pcs.addPoints(coordinatesShape[0], positionAndColorParticles);                
         var pcsMesh = await pcs.buildMeshAsync();
         pcsMesh.hasVertexAlpha = true;                                                
-        pcsMesh.showBoundingBox = true;            
+        pcsMesh.showBoundingBox = true; 
+
+        axes.xAxis.parent = pcsMesh;
+        axes.yAxis.parent = pcsMesh;
+        axes.zAxis.parent = pcsMesh;
+
+        var originalPcsMaterial: Nullable<Material> = null;           
         if (useOwnShader)       
-            originalPcsMaterial = useOwnShaderForMesh(pcsMesh, scene);
+            originalPcsMaterial = useOwnShaderForMesh(pcsMesh, scene, colorConfig,allDensitiesGlobal);
         
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-        buildGUI(advancedTexture, pcs, colorConfig, allDensitiesGlobal);
+        buildGUI(advancedTexture, pcs, originalPcsMaterial, pcsMesh, colorConfig, allDensitiesGlobal);
     }    
 
     const arrow = new VectorFieldVisualizer(scene);
@@ -81,13 +89,17 @@ export async function createScene(file_url: string, filename: string, partType: 
     return scene;
 }
 
-function useOwnShaderForMesh(mesh: Mesh, scene: Scene): Nullable<Material>
+function useOwnShaderForMesh(mesh: Mesh, scene: Scene, colorConfig:ColorConfig, allDensitiesGlobal: number[]): Nullable<Material>
 {          
-    // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
+    mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
     var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
-    attributes: ["position", "uv"],
-    uniforms: ["worldViewProjection"]                
-    });                    
+    attributes: ["position", "uv", "densities"],
+    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density"]                
+    });                        
+    shaderMaterial.setColor3("min_color", colorConfig.min_color);
+    shaderMaterial.setColor3("max_color", colorConfig.max_color);
+    shaderMaterial.setFloat("min_density", colorConfig.min_density);
+    shaderMaterial.setFloat("max_density", colorConfig.max_density);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
     let tmpMaterial = mesh.material;

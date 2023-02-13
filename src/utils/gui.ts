@@ -3,35 +3,41 @@ import {
     Color4,
     PointsCloudSystem,
     CloudPoint,
+    Material,
+    Mesh,
+    StandardMaterial,
+    Nullable,
+    ShaderMaterial
 } from "@babylonjs/core";
 
 import { Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider } from "@babylonjs/gui";
 
 import { min, max } from "mathjs";
-import { originalPcsMaterial } from "./scenery";
+ import {useOwnShaderInit} from "../config/appconfig";
 
-export var useOwnShader = true;
+export var useOwnShader = useOwnShaderInit;
+var exchangeMaterialGlobal: Nullable<Material>;
 
 export interface ColorConfig {
-    max_color: Color4;
-    min_color: Color4;
+    max_color: Color3;
+    min_color: Color3;
     max_density: number;
     min_density: number;
     automatic_opacity: boolean;
 }
 
 export function calcColor(config: ColorConfig, density: number) {
-    let tmp: number = 1.0 - density;
-    let tmp_alpha = config.automatic_opacity ? tmp * density : tmp;
-    let one_minus_d = new Color4(tmp, tmp, tmp, tmp_alpha);
-    let d = new Color4(density, density, density, density);
+    let tmp: number = 1.0 - density;    
+    let one_minus_d = new Color3(tmp, tmp, tmp);
+    let d = new Color3(density, density, density);
 
     let color = config.min_color.multiply(one_minus_d).add(config.max_color.multiply(d));
-    color.a = min(max(0, density - config.min_density) / (config.max_density - config.min_density), 1);
-    return color;
+    let color4 = color.toColor4(min(max(0, density - config.min_density) / (config.max_density - config.min_density), 1));
+    return color4;
 }
 
-export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudSystem, colorConfig: ColorConfig, density_array: Array<number>) {
+export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudSystem, exchangeMaterial:Nullable<Material>, currentMesh:Mesh, colorConfig: ColorConfig, density_array: Array<number>) {
+    exchangeMaterialGlobal = exchangeMaterial;
     let panel = new StackPanel();
     panel.width = "200px";
     panel.isVertical = true;
@@ -52,9 +58,11 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     min_color_picker.width = "150px";
     min_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     min_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
-        colorConfig.min_color.copyFrom(value.toColor4(1));
+        colorConfig.min_color.copyFrom(value);
         if(!useOwnShader)    
             pcs.setParticles();
+        else        
+            (currentMesh.material as ShaderMaterial).setColor3("min_color", colorConfig.min_color);
     });
     pcs.updateParticle = function (particle: CloudPoint) {
         particle.color = calcColor(colorConfig, density_array[particle.idx]);
@@ -76,9 +84,11 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     max_color_picker.width = "150px";
     max_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     max_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
-        colorConfig.max_color.copyFrom(value.toColor4(1));
+        colorConfig.max_color.copyFrom(value);
         if(!useOwnShader)
             pcs.setParticles()
+            else        
+            (currentMesh.material as ShaderMaterial).setColor3("max_color", colorConfig.max_color);
     });
     panel.addControl(max_color_picker);
 
@@ -99,6 +109,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
         // colorConfig.min_color.a = colorConfig.min_density;
         if(!useOwnShader)
             pcs.setParticles()
+        else        
+            (currentMesh.material as ShaderMaterial).setFloat("min_density", colorConfig.min_density);
     });
     panel.addControl(min_slider);
 
@@ -119,6 +131,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
         //colorConfig.max_color.a = colorConfig.max_density;
         if(!useOwnShader)
             pcs.setParticles()
+        else        
+            (currentMesh.material as ShaderMaterial).setFloat("max_density", colorConfig.max_density);
     });
     panel.addControl(max_slider);
 
@@ -129,7 +143,10 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     useOwnShadercheckbox.color = "green";
     useOwnShadercheckbox.onIsCheckedChangedObservable.add(function(value) {
         useOwnShadercheckbox.color = useOwnShadercheckbox.isChecked ? "green" : "red";
-        useOwnShader = useOwnShadercheckbox.isChecked;
+        useOwnShader = useOwnShadercheckbox.isChecked;        
+        var tmp = currentMesh.material;
+        currentMesh.material = exchangeMaterialGlobal;
+        exchangeMaterialGlobal = tmp;        
     });
     panel.addControl(useOwnShadercheckbox);   
 
