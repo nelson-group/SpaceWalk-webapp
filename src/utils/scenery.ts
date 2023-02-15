@@ -1,11 +1,11 @@
 import { Hdf5File } from "./hdf5_loader";
-import { reshape, min, max, divide, MathType, subtract, norm, abs } from "mathjs";
+import { reshape, min, max, divide, MathType, subtract, norm, abs, ceil, pow } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI, ColorConfig, useOwnShader } from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer } from "@babylonjs/core";
+import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer, int, SubMesh, Octree, OctreeBlock } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3, minCoords:Nullable<Array<number>> = null, mesh: Nullable<Mesh> = null) {
@@ -42,12 +42,12 @@ export async function createScene(file_url: string, filename: string, partType: 
     await hdf5File.open(file_url, filename);
 
     var allCoordsGlobal = hdf5File.getElements(coordinatesPath);
+    let minCoords = min(allCoordsGlobal, 0);
     var coordinatesShape = hdf5File.getElementsShape(coordinatesPath);
     var allDensitiesGlobal = hdf5File.getElements(densityPath) as Array<number>;
 
     var maxDensity = max(allDensitiesGlobal) as number;
-    allDensitiesGlobal = divide(allDensitiesGlobal, maxDensity) as Array<number>;
-    const axes = new AxesViewer(scene, 100);    
+    allDensitiesGlobal = divide(allDensitiesGlobal, maxDensity) as Array<number>;    
     if (!usePointCloudSystem) {
         const wireFrameMaterial = new StandardMaterial("wireFrameMaterial", scene);
         wireFrameMaterial.wireframe = true;
@@ -55,8 +55,8 @@ export async function createScene(file_url: string, filename: string, partType: 
         setCamera(
             canvas,
             scene,
-            new Vector3(allCoordsGlobal[1][0], allCoordsGlobal[1][1], allCoordsGlobal[1][2]),
-            new Vector3(allCoordsGlobal[0][0], allCoordsGlobal[0][1], allCoordsGlobal[0][2])                
+            new Vector3(minCoords[0], minCoords[1], minCoords[2]),
+            new Vector3(allCoordsGlobal[1][0], allCoordsGlobal[1][1], allCoordsGlobal[1][2])
         );
     }
     else {
@@ -73,14 +73,12 @@ export async function createScene(file_url: string, filename: string, partType: 
             // particle.uv = new Vector2(64,64);            
         }                
 
+        
         var pcs = new PointsCloudSystem("pcs",2, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.
         pcs.addPoints(coordinatesShape[0], positionAndColorParticles);                
         var pcsMesh = await pcs.buildMeshAsync();
         pcsMesh.hasVertexAlpha = true;                                                
         pcsMesh.showBoundingBox = true; 
-        axes.xAxis.parent = pcsMesh;
-        axes.yAxis.parent = pcsMesh;
-        axes.zAxis.parent = pcsMesh;
 
         var originalPcsMaterial: Nullable<Material> = null;           
         if (useOwnShader)       
@@ -91,19 +89,65 @@ export async function createScene(file_url: string, filename: string, partType: 
         setCamera(
             canvas,
             scene,
-            new Vector3(allCoordsGlobal[1][0], allCoordsGlobal[1][1], allCoordsGlobal[1][2]),
-            new Vector3(allCoordsGlobal[0][0], allCoordsGlobal[0][1], allCoordsGlobal[0][2]),
-            min(allCoordsGlobal, 0),
+            new Vector3(minCoords[0], minCoords[1], minCoords[2]),
+            new Vector3(allCoordsGlobal[1][0], allCoordsGlobal[1][1], allCoordsGlobal[1][2]),            
+            minCoords,
             pcsMesh
         );
-    }    
+        
+        let pcsMesh2 = pcsMesh.clone("pcsMesh2");
+        pcsMesh2.visibility = 0;
+        pcsMesh2.useOctreeForPicking = true;
+        // pcsMesh.useOctreeForCollisions = true;
+        
+        // console.log(pcsMesh.subMeshes);
+        let numberOfParticlesPerLeaf = 8;
+        let idArray = [...Array(coordinatesShape[0]).keys()];
+        // console.log(pcsMesh.subMeshes);
+        pcsMesh2.setIndices(idArray);
+        pcsMesh2.subdivide(idArray.length / numberOfParticlesPerLeaf); //make around enough submeshes such that numberOfLeaves are fullfilled per submesh, which is to iterate then
+        // console.log(pcsMesh.subMeshes);
+        let depth = 5;
+        let numberOfLeafs = ceil(pcsMesh2.subMeshes.length / (pow(8, depth) as number));
+        pcsMesh2.createOrUpdateSubmeshesOctree(numberOfLeafs, depth);
+        pcsMesh2.isPickable = false;
+        // let test = pcsMesh2.intersectsPoint(new Vector3(allCoordsGlobal[0][0],allCoordsGlobal[0][1],allCoordsGlobal[0][2]));
+        // console.log(pcsMesh2.intersectsPoint(new Vector3(0,0,0)));
+        // console.log(pcsMesh2.intersectsPoint(new Vector3(minCoords[0], minCoords[1], minCoords[2])));
+        // console.log(test);
+        // console.log(pcsMesh2._submeshesOctree);
+        // let test2 = pcsMesh2._submeshesOctree.intersects(new Vector3(allCoordsGlobal[0][0],allCoordsGlobal[0][1],allCoordsGlobal[0][2]), 1e-10, false)
+        // console.log(test2);
 
-    const arrow = new VectorFieldVisualizer(scene);
-    arrow.createArrow();
+        let entities = Array<OctreeBlock<any>>();
+        pcsMesh2._submeshesOctree.blocks.forEach(element => {
+            entities.push(element);});
+            console.log(entities);
+        let counter = 0;
+        for (let index = 0; index < entities.length; index++) {
+            const element = entities[index];
+            console.log(index);                    
+            element.blocks.forEach(element2 => { 
+                    if(element2.blocks)                    
+                    entities.push(element2);
+                    else
+                    if(element2.entries.length > 0){
+                        element2.entries.forEach(element3 => {
+                            if (element3 instanceof SubMesh)
+                                counter++;
+                        // console.log(entities.length + ":" + counter);
+                        })
+                    }
+                
+                })
+            };                                                            
+        
 
-    // if (displayOutline) { //not needed anymore since the mesh itself provides boundingboxes
-    //     drawOutline(allCoordsGlobal, scene);
-    // }
+        console.log("done:" + counter);
+
+    }
+
+    
 
     return scene;
 }
