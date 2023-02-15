@@ -16,7 +16,7 @@ varying float vdensity;
 void main()
 {
     gl_Position = worldViewProjection * vec4(position, 1.0);    
-    gl_PointSize = 2.;
+    // gl_PointSize = 2.;
     gl_PointSize = 20. * max(pow(1000000., 1. - (length(cameraPosition - position) / distance)) / 1000000., 0.1);
     vdensity = densities;
     vUV = uv;
