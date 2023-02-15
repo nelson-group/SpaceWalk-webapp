@@ -12,9 +12,8 @@ void main() {
    float one_minus_d = 1. - vdensity;
    vec3 color = min_color * one_minus_d + max_color * vdensity;   
    float opacity = min(max(0., vdensity - min_density) / (max_density - min_density), 1.);
-   // vec4 newColor = vec4(color, opacity);
-   vec4 newColor = vec4(vdensity,vdensity,vdensity, vdensity);
 
+   vec4 newColor = vec4(color, opacity);
    gl_FragColor = newColor;
 }
 
