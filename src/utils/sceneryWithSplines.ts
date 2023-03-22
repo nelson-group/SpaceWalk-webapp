@@ -2,11 +2,13 @@ import { Hdf5File } from "./hdf5_loader";
 import { reshape, min, max, divide, MathType, subtract, norm, abs, ceil, pow } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
-import { calcColor, buildGUI, ColorConfig, useOwnShader } from "./gui";
+import { calcColor, buildGUI, ColorConfig, useOwnShader, TimeConfig } from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer, int, SubMesh, Octree, OctreeBlock } from "@babylonjs/core";
+import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer, int, SubMesh, Octree, OctreeBlock, Vector4 } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
+
+
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3, minCoords:Nullable<Array<number>> = null, mesh: Nullable<Mesh> = null) {
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, 1, cameraPosition, scene);
@@ -20,19 +22,20 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vect
         let distance = norm(subtract(targetPositionArray, minCoords)) as number;
         // console.log(distance, minCoords, targetPosition);
         camera.onViewMatrixChangedObservable.add(() => 
-        {  
-            
+        {              
             if (useOwnShader)
             {
                 (mesh.material as ShaderMaterial).setFloat("distance", distance);
                 (mesh.material as ShaderMaterial).setVector3("cameraPosition", camera.globalPosition);
+                mesh.setVerticesData("splines", Array(0), false, 1); //TODO: need data from sockel
             }
-        });
+        }); 
     }
 }
 
-export async function createScene(file_url: string, filename: string, partType: string, canvas: HTMLCanvasElement, engine: Engine, usePointCloudSystem: boolean = true, displayOutline: boolean = true) {
-    var scene = new Scene(engine);
+
+
+export async function createScene(file_url: string, filename: string, partType: string, canvas: HTMLCanvasElement, engine: Engine, usePointCloudSystem: boolean = true, displayOutline: boolean = true) {    var scene = new Scene(engine);
     scene.createDefaultLight(true);
 
     var coordinatesPath = partType + "/Coordinates";
@@ -67,16 +70,15 @@ export async function createScene(file_url: string, filename: string, partType: 
             "max_density": max(allDensitiesGlobal),
             "automatic_opacity": false,
         };
-        var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {
-            particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
-            particle.color = calcColor(colorConfig, allDensitiesGlobal[i]); //still needed for not own shader part
-            // particle.uv = new Vector2(64,64);            
-        }                
+        var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {            
 
-        
+            particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
+            particle.color = calcColor(colorConfig, allDensitiesGlobal[i]); //still needed for not own shader part           
+        }                
+                
         var pcs = new PointsCloudSystem("pcs",2, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.
         pcs.addPoints(coordinatesShape[0], positionAndColorParticles);                
-        var pcsMesh = await pcs.buildMeshAsync();
+        var pcsMesh = await pcs.buildMeshAsync();    
         pcsMesh.hasVertexAlpha = true;                                                
         pcsMesh.showBoundingBox = true; 
 
@@ -85,7 +87,22 @@ export async function createScene(file_url: string, filename: string, partType: 
             originalPcsMaterial = useOwnShaderForMesh(pcsMesh, scene, colorConfig,allDensitiesGlobal);
         
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-        buildGUI(advancedTexture, pcs, originalPcsMaterial, pcsMesh, colorConfig, allDensitiesGlobal);
+
+        var timeConfig = {
+            "current_snapnum": 75,
+            "min_snapnum": 0,
+            "max_snapnum": 99,
+            "number_of_interpolations": 100,
+            "is_active": false,
+            "t": 0,
+            "text_object_snapnum": null,
+            "slider_object_snapnum": null,
+            "text_object_interpolation": null,            
+            "minimum_fps": 3,
+            "mesh": pcsMesh
+        } 
+
+        buildGUI(advancedTexture, pcs, originalPcsMaterial, pcsMesh, colorConfig, timeConfig, allDensitiesGlobal);
         setCamera(
             canvas,
             scene,
@@ -95,56 +112,6 @@ export async function createScene(file_url: string, filename: string, partType: 
             pcsMesh
         );
         
-        let pcsMesh2 = pcsMesh.clone("pcsMesh2");
-        pcsMesh2.visibility = 0;
-        pcsMesh2.useOctreeForPicking = true;
-        // pcsMesh.useOctreeForCollisions = true;
-        
-        // console.log(pcsMesh.subMeshes);
-        let numberOfParticlesPerLeaf = 8;
-        let idArray = [...Array(coordinatesShape[0]).keys()];
-        // console.log(pcsMesh.subMeshes);
-        pcsMesh2.setIndices(idArray);
-        pcsMesh2.subdivide(idArray.length / numberOfParticlesPerLeaf); //make around enough submeshes such that numberOfLeaves are fullfilled per submesh, which is to iterate then
-        // console.log(pcsMesh.subMeshes);
-        let depth = 5;
-        let numberOfLeafs = ceil(pcsMesh2.subMeshes.length / (pow(8, depth) as number));
-        pcsMesh2.createOrUpdateSubmeshesOctree(numberOfLeafs, depth);
-        pcsMesh2.isPickable = false;
-        // let test = pcsMesh2.intersectsPoint(new Vector3(allCoordsGlobal[0][0],allCoordsGlobal[0][1],allCoordsGlobal[0][2]));
-        // console.log(pcsMesh2.intersectsPoint(new Vector3(0,0,0)));
-        // console.log(pcsMesh2.intersectsPoint(new Vector3(minCoords[0], minCoords[1], minCoords[2])));
-        // console.log(test);
-        // console.log(pcsMesh2._submeshesOctree);
-        // let test2 = pcsMesh2._submeshesOctree.intersects(new Vector3(allCoordsGlobal[0][0],allCoordsGlobal[0][1],allCoordsGlobal[0][2]), 1e-10, false)
-        // console.log(test2);
-
-        let entities = Array<OctreeBlock<any>>();
-        pcsMesh2._submeshesOctree.blocks.forEach(element => {
-            entities.push(element);});
-            console.log(entities);
-        let counter = 0;
-        for (let index = 0; index < entities.length; index++) {
-            const element = entities[index];
-            console.log(index);                    
-            element.blocks.forEach(element2 => { 
-                    if(element2.blocks)                    
-                    entities.push(element2);
-                    else
-                    if(element2.entries.length > 0){
-                        element2.entries.forEach(element3 => {
-                            if (element3 instanceof SubMesh)
-                                counter++;
-                        // console.log(entities.length + ":" + counter);
-                        })
-                    }
-                
-                })
-            };                                                            
-        
-
-        console.log("done:" + counter);
-
     }
 
     
@@ -154,17 +121,17 @@ export async function createScene(file_url: string, filename: string, partType: 
 
 function useOwnShaderForMesh(mesh: Mesh, scene: Scene, colorConfig:ColorConfig, allDensitiesGlobal: number[]): Nullable<Material>
 {          
-    mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);        
+    mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
     var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
-    attributes: ["position", "uv", "densities"],
-    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "distance", "cameraPosition"]                
-    });                        
+    attributes: ["uv", "densities", "spline"],
+    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "cameraPosition", "t"]                
+    });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);
     shaderMaterial.setFloat("min_density", colorConfig.min_density);
-    shaderMaterial.setFloat("max_density", colorConfig.max_density);    
-    shaderMaterial.setFloat("distance", 1);
+    shaderMaterial.setFloat("max_density", colorConfig.max_density);        
     shaderMaterial.setVector3("cameraPosition", Vector3.Zero());
+    shaderMaterial.setFloat("t", 0);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
     let tmpMaterial = mesh.material;

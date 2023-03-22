@@ -26,6 +26,20 @@ export interface ColorConfig {
     automatic_opacity: boolean;
 }
 
+export interface TimeConfig {
+    min_snapnum: number;
+    max_snapnum: number;
+    current_snapnum: number;
+    number_of_interpolations: number;
+    is_active: boolean;
+    t:number;
+    text_object_snapnum: Nullable<TextBlock>;
+    text_object_interpolation: Nullable<TextBlock>;
+    minimum_fps: number;
+    mesh: Nullable<Mesh>;
+    slider_object_snapnum: Nullable<Slider>;
+}
+
 export function calcColor(config: ColorConfig, density: number) {
     let tmp: number = 1.0 - density;    
     let one_minus_d = new Color3(tmp, tmp, tmp);
@@ -36,7 +50,34 @@ export function calcColor(config: ColorConfig, density: number) {
     return color4;
 }
 
-export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudSystem, exchangeMaterial:Nullable<Material>, currentMesh:Mesh, colorConfig: ColorConfig, density_array: Array<number>) {
+var timeConfigGlobal: TimeConfig;
+
+function timeClock()
+{
+    if (!timeConfigGlobal.is_active)
+        return;
+    
+    timeConfigGlobal.t += (1 / timeConfigGlobal.number_of_interpolations)
+    if (timeConfigGlobal.t >= 1)
+    {
+        // timeConfigGlobal.t = 0
+        timeConfigGlobal.current_snapnum += 1        
+    }
+    if (timeConfigGlobal.mesh && useOwnShader)
+        (timeConfigGlobal.mesh.material as ShaderMaterial).setFloat("t", timeConfigGlobal.t);
+
+    if (timeConfigGlobal.text_object_interpolation)
+        timeConfigGlobal.text_object_interpolation.text = "Interpolation: " + roundNumber(timeConfigGlobal.t)
+
+    if (timeConfigGlobal.slider_object_snapnum && timeConfigGlobal.slider_object_snapnum.value != timeConfigGlobal.current_snapnum)
+    {
+        // timeConfigGlobal.text_object_snapnum.text = "Snapnum: " + timeConfigGlobal.current_snapnum
+        timeConfigGlobal.slider_object_snapnum.value = timeConfigGlobal.current_snapnum
+    }
+}
+
+export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudSystem, exchangeMaterial:Nullable<Material>, currentMesh:Mesh, colorConfig: ColorConfig, timeConfig:TimeConfig, density_array: Array<number>) {
+    timeConfigGlobal = timeConfig;
     exchangeMaterialGlobal = exchangeMaterial;
     let panel = new StackPanel();
     panel.width = "200px";
@@ -136,6 +177,49 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     });
     panel.addControl(max_slider);
 
+    let snapnum_text = new TextBlock("snapnumText");
+    snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
+    snapnum_text.height = "30px";
+    panel.addControl(snapnum_text);
+    var snapnum_slider = new Slider();
+    snapnum_slider.minimum = timeConfig.min_snapnum;
+    snapnum_slider.maximum = timeConfig.max_snapnum;
+    snapnum_slider.value = timeConfig.current_snapnum;
+    snapnum_slider.height = "20px";
+    snapnum_slider.width = "200px";
+    snapnum_slider.step = 1;
+    snapnum_slider.onValueChangedObservable.add(function(value) {        
+        snapnum_text.text = "Snapnum: " + value;
+        timeConfigGlobal.current_snapnum = value
+        timeConfigGlobal.t = 0
+    });
+    panel.addControl(snapnum_slider);   
+    let interpolation_text = new TextBlock("InterpolationText");
+    interpolation_text.text = "Interpolation: " + timeConfig.t;
+    interpolation_text.height = "30px";
+    panel.addControl(interpolation_text);
+
+    var interpolate_checkbox = new Checkbox();
+    interpolate_checkbox.width = "20px";
+    interpolate_checkbox.height = "20px";
+    interpolate_checkbox.isChecked = timeConfig.is_active;
+    interpolate_checkbox.color = "green";
+    interpolate_checkbox.onIsCheckedChangedObservable.add(function(value) {
+        interpolate_checkbox.color = interpolate_checkbox.isChecked ? "green" : "red";
+        timeConfig.is_active = interpolate_checkbox.isChecked;           
+    });
+    panel.addControl(interpolate_checkbox); 
+
+    timeConfig.text_object_interpolation = interpolation_text;
+    timeConfig.text_object_snapnum = snapnum_text;
+    timeConfig.slider_object_snapnum = snapnum_slider;
+
+    window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
+
+    var ownShaderText = new TextBlock("shaderText");
+    ownShaderText.text = "use own shader";
+    ownShaderText.height = "30px";
+    panel.addControl(ownShaderText); 
     var useOwnShadercheckbox = new Checkbox();
     useOwnShadercheckbox.width = "20px";
     useOwnShadercheckbox.height = "20px";
@@ -150,12 +234,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     });
     panel.addControl(useOwnShadercheckbox);   
 
-    var ownShaderText = new TextBlock();
-    ownShaderText.text = "use own shader";
-    ownShaderText.width = "180px";
-    ownShaderText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    ownShaderText.color = "white";
-    panel.addControl(ownShaderText); 
+
     
 
 }

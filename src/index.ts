@@ -1,5 +1,5 @@
-import { createScene } from "./utils/scenery";
-
+import { createScene } from "./utils/sceneryWithSplines";  
+ 
 const file_url = "data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
 const filename = "XYZ";
 const partType = "PartType0";
