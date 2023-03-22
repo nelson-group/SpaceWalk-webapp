@@ -6,7 +6,6 @@ attribute vec4 spline;
 attribute vec2 uv;
 
 uniform mat4 worldViewProjection;
-uniform vec3 cameraPosition;
 uniform float t;
 
 varying vec2 vUV;

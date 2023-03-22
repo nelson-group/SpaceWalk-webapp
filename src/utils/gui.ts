@@ -52,30 +52,27 @@ export function calcColor(config: ColorConfig, density: number) {
 
 var timeConfigGlobal: TimeConfig;
 
-function timeClock()
+async function timeClock()
 {
     if (!timeConfigGlobal.is_active)
         return;
     
     timeConfigGlobal.t += (1 / timeConfigGlobal.number_of_interpolations)
-    if (timeConfigGlobal.t >= 1)
-    {
+    if (timeConfigGlobal.t >= 1)    
         // timeConfigGlobal.t = 0
         timeConfigGlobal.current_snapnum += 1        
-    }
+    
+    if (timeConfigGlobal.slider_object_snapnum && timeConfigGlobal.slider_object_snapnum.value != timeConfigGlobal.current_snapnum)
+    // timeConfigGlobal.text_object_snapnum.text = "Snapnum: " + timeConfigGlobal.current_snapnum
+        timeConfigGlobal.slider_object_snapnum.value = timeConfigGlobal.current_snapnum
+
     if (timeConfigGlobal.mesh && useOwnShader)
         (timeConfigGlobal.mesh.material as ShaderMaterial).setFloat("t", timeConfigGlobal.t);
-
+    
     if (timeConfigGlobal.text_object_interpolation)
         timeConfigGlobal.text_object_interpolation.text = "Interpolation: " + roundNumber(timeConfigGlobal.t)
-
-    if (timeConfigGlobal.slider_object_snapnum && timeConfigGlobal.slider_object_snapnum.value != timeConfigGlobal.current_snapnum)
-    {
-        // timeConfigGlobal.text_object_snapnum.text = "Snapnum: " + timeConfigGlobal.current_snapnum
-        timeConfigGlobal.slider_object_snapnum.value = timeConfigGlobal.current_snapnum
-    }
 }
-
+ 
 export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudSystem, exchangeMaterial:Nullable<Material>, currentMesh:Mesh, colorConfig: ColorConfig, timeConfig:TimeConfig, density_array: Array<number>) {
     timeConfigGlobal = timeConfig;
     exchangeMaterialGlobal = exchangeMaterial;
