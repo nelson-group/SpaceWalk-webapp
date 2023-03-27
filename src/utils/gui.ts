@@ -48,7 +48,7 @@ async function timeClock()
         timeConfigGlobal.text_object_interpolation.text = "Interpolation: " + roundNumber(timeConfigGlobal.t)
 }
  
-export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudSystem, currentMesh:Mesh, colorConfig: Record<string,any>, timeConfig:Record<string,any>) {
+export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial, colorConfig: Record<string,any>, timeConfig:Record<string,any>) {
     timeConfigGlobal = timeConfig;
     let panel = new StackPanel();
     panel.width = "200px";
@@ -71,7 +71,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     min_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     min_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
         colorConfig.min_color.copyFrom(value);
-        (currentMesh.material as ShaderMaterial).setColor3("min_color", colorConfig.min_color);
+        currentMaterial.setColor3("min_color", colorConfig.min_color);
     });
 
     panel.addControl(min_color_picker);
@@ -90,7 +90,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     max_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     max_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
         colorConfig.max_color.copyFrom(value);      
-        (currentMesh.material as ShaderMaterial).setColor3("max_color", colorConfig.max_color);
+        currentMaterial.setColor3("max_color", colorConfig.max_color);
     });
     panel.addControl(max_color_picker);
 
@@ -108,7 +108,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     min_slider.onValueChangedObservable.add(function(value) {
         min_opacity_text.text = "Min Density: " + roundNumber(value);
         colorConfig.min_density = value;
-        (currentMesh.material as ShaderMaterial).setFloat("min_density", colorConfig.min_density);
+        currentMaterial.setFloat("min_density", colorConfig.min_density);
     });
     panel.addControl(min_slider);
 
@@ -126,7 +126,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , pcs: PointsCloudS
     max_slider.onValueChangedObservable.add(function(value) {
         max_opacity_text.text = "Max Density: " + roundNumber(value);
         colorConfig.max_density = value;       
-        (currentMesh.material as ShaderMaterial).setFloat("max_density", colorConfig.max_density);
+        currentMaterial.setFloat("max_density", colorConfig.max_density);
     });
     panel.addControl(max_slider);
 

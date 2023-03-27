@@ -18,14 +18,18 @@ export type camera_information_json = {
 export class CameraConfig {
     private static instance: CameraConfig;
 
-    public viewboxCenter = new Vector3(25000, 25000, 25000);
-    public cameraRadius = new Vector3(500);
-    public viewboxVolume = this.cameraRadius._x * this.cameraRadius._y * this.cameraRadius._z 
-    public viewboxMin = this.viewboxCenter.subtract(this.cameraRadius)
-    public viewboxMax = this.viewboxCenter.add(this.cameraRadius) 
+    public viewboxCenter:Vector3
+    public cameraRadius:Vector3
+    public viewboxVolume:number
+    public viewboxMin:Vector3
+    public viewboxMax:Vector3
 
     private constructor() {
-        
+        this.viewboxCenter = new Vector3(7218.33, 24516.7, 21434.0);
+        this.cameraRadius = new Vector3(500,500,500);
+        this.viewboxVolume = this.cameraRadius._x * this.cameraRadius._y * this.cameraRadius._z
+        this.viewboxMin = this.viewboxCenter.subtract(this.cameraRadius)
+        this.viewboxMax = this.viewboxCenter.add(this.cameraRadius)
      }
 
     public static getInstance(): CameraConfig {
@@ -52,11 +56,11 @@ function boxIntersect(minBox: Vector3, maxBox: Vector3, minCamera: Vector3, maxC
 
 function setCamera(canvas: HTMLCanvasElement, scene: Scene) {
     let cameraConfig = CameraConfig.getInstance()
-    var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, 1, cameraConfig.viewboxCenter, scene);    
+    var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
     camera.attachControl(canvas, true);
     camera.zoomToMouseLocation = true;
     camera.inputs.addGamepad();
-                      
+                    
     // console.log(distance, minCoords, targetPosition);
     camera.onViewMatrixChangedObservable.add(() => 
     {         
@@ -82,44 +86,37 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene) {
     });     
 }
 
-export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true): Promise<[Scene, Mesh, StackPanel]>
+export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true): Promise<[Scene, PointsCloudSystem, ShaderMaterial, StackPanel]>
  {    
     var scene = new Scene(engine);
     scene.createDefaultLight(true);
-        var pcs = new PointsCloudSystem("pcs",2, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
-        var pcsMesh = await pcs.buildMeshAsync();    
-        pcsMesh.hasVertexAlpha = true;                                                
-        pcsMesh.showBoundingBox = true; 
-    
-        useOwnShaderForMesh(pcsMesh, scene, colorConfig);
-        
-        var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+    var pcs = new PointsCloudSystem("pcs",2, scene, { updatable: false }); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
+    let material = createMaterial(scene, colorConfig, timeConfig)
 
+    var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
+    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig);
+    setCamera(
+        canvas,
+        scene           
+    );
 
-        
-        let guiPanel = buildGUI(advancedTexture, pcs, pcsMesh, colorConfig, timeConfig);
-        setCamera(
-            canvas,
-            scene           
-        );
-
-    return [scene, pcsMesh, guiPanel];
+    return [scene, pcs, material, guiPanel];
 }
 
-function useOwnShaderForMesh(mesh: Mesh, scene: Scene, colorConfig:Record<string,any>)
-{          
+function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:Record<string,any>){
     // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
     var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
-    attributes: ["uv", "densities", "spline"],
-    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "t"]                
-    });                            
-    shaderMaterial.setColor3("min_color", colorConfig.min_color);
-    shaderMaterial.setColor3("max_color", colorConfig.max_color);
-    // shaderMaterial.setFloat("min_density", colorConfig.min_density);
-    // shaderMaterial.setFloat("max_density", colorConfig.max_density); 
-    shaderMaterial.setFloat("t", 0);
-    shaderMaterial.backFaceCulling = false;            
-    shaderMaterial.pointsCloud = true;
-    mesh.material = shaderMaterial;             
-}
+        attributes: ["uv", "densities", "splines"],
+        uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "t"]                
+        });                            
+        shaderMaterial.setColor3("min_color", colorConfig.min_color);
+        shaderMaterial.setColor3("max_color", colorConfig.max_color);
+        // shaderMaterial.setFloat("min_density", colorConfig.min_density);
+        // shaderMaterial.setFloat("max_density", colorConfig.max_density); 
+        shaderMaterial.setFloat("t", timeConfig.t);
+        shaderMaterial.backFaceCulling = false;            
+        shaderMaterial.pointsCloud = true;
+        return shaderMaterial
+    }
+

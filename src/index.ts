@@ -4,25 +4,12 @@ const file_url = "data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
 const filename = "XYZ";
 const partType = "PartType0";
 
-import { Engine, Nullable, Mesh, Color3 } from "@babylonjs/core";
+import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3 } from "@babylonjs/core";
 import { number } from "mathjs";
 import {StackPanel, Slider} from "@babylonjs/gui"
 
 let dowloadInProcess = false
-let newDataAvailable = false
 let finishedDownload = false
-
-interface DataResponseType {
-    level_of_detail: Record<number,number>;
-    relevant_ids: Array<number>;
-    node_indices: Array<number>;
-    coordinates: Array<Array<number>>;
-    velocities: Array<Array<number>>;
-    densities: Array<number>;
-    splines: Array<Array<number>>;
-    min_density: number;
-    max_density: number;
-}
 
 var timeConfig = {
     "current_snapnum": 75,
@@ -45,10 +32,8 @@ var colorConfig = {
     "automatic_opacity": false,
 };
 
-const url = "http://127.0.0.1:8080/v1/get/splines/";
+const url = "http://127.0.0.1:8000/v1/get/splines/";
 let simulationName = "TNG50-4"
-let snapId = 75;
-let fullUrl = url +simulationName + "/" + snapId + "/"
 let node_indices:Array<number> = [];
 let level_of_detail:Record<number,number> = {};
 let batch_size_lod = 500;
@@ -59,37 +44,30 @@ async function main() {
     const divDownloading = document.getElementById("downloading")!;
 
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-    var [scene, mesh, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);
+    var [scene, pcs, material, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);
     let minSlider:Nullable<Slider> = guiPanel.getChildByName("min_opacity_slider") as Slider
     let maxSlider:Nullable<Slider> = guiPanel.getChildByName("max_opacity_slider") as Slider
+    window.addEventListener('resize', function () {
+        engine.resize();
+    });
 
     engine.runRenderLoop(function () {
         divFPS.innerHTML = engine.getFps().toFixed() + " fps";
         scene.render();
-        if (newDataAvailable)
-        {
-            if (!finishedDownload)
-                divDownloading.innerHTML = "downloading";
-                
-            newDataAvailable = false;
-            //do mesh things
-        }
-        else if(!dowloadInProcess)        
+        if(!dowloadInProcess && !finishedDownload)        
         {
             dowloadInProcess = true;
             const payload = {
-                client_state:   {
-                    node_indices: node_indices,
-                    level_of_detail: level_of_detail,
-                    batch_size_lod: batch_size_lod,
-                    camera_information: CameraConfig.getInstance().getCameraConfig()
-                }
+                    "node_indices": node_indices,
+                    "level_of_detail": level_of_detail,
+                    "batch_size_lod": batch_size_lod,
+                    "camera_information": CameraConfig.getInstance().getCameraConfig()
               };
             
-            fetch(fullUrl, {
+            fetch(url + simulationName + "/" + timeConfig.current_snapnum, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json'                  
                 },
                 body: JSON.stringify(payload)
               })
@@ -100,34 +78,31 @@ async function main() {
                   return response.json();
                 })
                 .then(data => {
-                  console.log('Success:', data);
-                  const dataResponse: DataResponseType = JSON.parse(data);
-                  guiUpdate(dataResponse, colorConfig, minSlider, maxSlider)
-                    
+                console.log('Success:', data);
+                if ((data.splines as Array<any>).length == 0)
+                {
+                    divDownloading.innerHTML = "download finished";
+                    finishedDownload = true
+                    return
+                }
+
+                  guiUpdate(data, colorConfig, minSlider, maxSlider);
+                  updateMesh(data, pcs, material)
+                  updateMetaDataOnClient(data);
+                
                   dowloadInProcess = false;
-                  newDataAvailable = true;
                 })
                 .catch(error => {
                   console.error('Error:', error);
                   dowloadInProcess = false;
                 });
-        
-            // if (finishedDownload)
-            //     divDownloading.innerHTML = "download finished";
-           
-            
-
-        }
-        
+        }        
     });
 
-    window.addEventListener('resize', function () {
-        engine.resize();
-    });
 }
 
 await main();
-async function guiUpdate(dataResponse: DataResponseType, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>) {
+async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>) {
     if (colorConfig.min_density != dataResponse.min_density || 
         colorConfig.max_density != dataResponse.max_density)
       {
@@ -142,4 +117,26 @@ async function guiUpdate(dataResponse: DataResponseType, colorConfig: Record<str
         }
       }
 }
+
+function updateMetaDataOnClient(data: Record<string,any>) {
+    level_of_detail = data.level_of_detail
+    node_indices = data.node_indices    
+}
+
+let initVector = new Vector3(0,0,0)
+function placeholderForShader(particle:CloudPoint, i: number, _s: number){
+    particle.position = initVector;
+}
+
+async function updateMesh(data: Record<string,any>, pcs: PointsCloudSystem, material: ShaderMaterial) {    
+    pcs.addPoints((data.splines as Array<any>).length, placeholderForShader);      
+    var pcsMesh = await pcs.buildMeshAsync();
+    
+    pcsMesh.hasVertexAlpha = true;                                                
+    pcsMesh.showBoundingBox = true;
+    pcsMesh.material = material;
+    pcsMesh.setVerticesData("splines", data.splines, false, 1);
+    pcsMesh.setVerticesData("densities", data.densities, false, 1);
+}
+
 
