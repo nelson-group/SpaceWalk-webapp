@@ -2,139 +2,124 @@ import { Hdf5File } from "./hdf5_loader";
 import { reshape, min, max, divide, MathType, subtract, norm, abs, ceil, pow } from "mathjs";
 import { drawOutline } from "./outline";
 import { drawSpheres } from "./spheres";
-import { calcColor, buildGUI, ColorConfig, useOwnShader, TimeConfig } from "./gui";
+import { calcColor, buildGUI} from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer, int, SubMesh, Octree, OctreeBlock, Vector4 } from "@babylonjs/core";
-import { AdvancedDynamicTexture } from "@babylonjs/gui";
+import { MeshBuilder, StorageBuffer, Scene, PointsCloudSystem, ArcRotateCamera, StandardMaterial, Vector3, Color3, Color4, Engine, CloudPoint, Texture, Vector2, Material, ShaderMaterial, Mesh, Nullable, AxesViewer, int, SubMesh, Octree, OctreeBlock, Vector4, double } from "@babylonjs/core";
+import { AdvancedDynamicTexture, StackPanel } from "@babylonjs/gui";
 
+export type camera_information_json = {
+    x: number;
+    y: number;
+    z: number;    
+    size: number;
+}
 
+export class CameraConfig {
+    private static instance: CameraConfig;
 
-function setCamera(canvas: HTMLCanvasElement, scene: Scene, cameraPosition: Vector3, targetPosition: Vector3, minCoords:Nullable<Array<number>> = null, mesh: Nullable<Mesh> = null) {
-    var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, 1, cameraPosition, scene);
-    camera.setTarget(targetPosition);
-    camera.attachControl(canvas, true);
-    camera.zoomToMouseLocation = true;
-    
-    if (mesh != null && minCoords != null)
-    {           
-        let targetPositionArray = [targetPosition.x, targetPosition.y, targetPosition.z] as Array<number>;
-        let distance = norm(subtract(targetPositionArray, minCoords)) as number;
-        // console.log(distance, minCoords, targetPosition);
-        camera.onViewMatrixChangedObservable.add(() => 
-        {              
-            if (useOwnShader)
-            {
-                (mesh.material as ShaderMaterial).setFloat("distance", distance);
-                (mesh.material as ShaderMaterial).setVector3("cameraPosition", camera.globalPosition);
-                mesh.setVerticesData("splines", Array(0), false, 1); //TODO: need data from sockel
-            }
-        }); 
+    public viewboxCenter = new Vector3(25000, 25000, 25000);
+    public cameraRadius = new Vector3(500);
+    public viewboxVolume = this.cameraRadius._x * this.cameraRadius._y * this.cameraRadius._z 
+    public viewboxMin = this.viewboxCenter.subtract(this.cameraRadius)
+    public viewboxMax = this.viewboxCenter.add(this.cameraRadius) 
+
+    private constructor() {
+        
+     }
+
+    public static getInstance(): CameraConfig {
+        if (!CameraConfig.instance) {
+            CameraConfig.instance = new CameraConfig();
+        }
+
+        return CameraConfig.instance;
+    }
+        
+    public getCameraConfig(): camera_information_json {
+        return {x: this.viewboxCenter.x, y: this.viewboxCenter.y, z: this.viewboxCenter.z,  size: this.cameraRadius.x}
     }
 }
 
+function boxIntersect(minBox: Vector3, maxBox: Vector3, minCamera: Vector3, maxCamera: Vector3){
+        let dx = min(maxBox._x, maxCamera._x) - max(minBox._x, minCamera._x)
+        let dy = min(maxBox._y, maxCamera._y) - max(minBox._y, minCamera._y)
+        let dz = min(maxBox._z, maxCamera._z) - max(minBox._z, minCamera._z)
+        if (dx >= 0 && dy >= 0 && dz >= 0)
+            return dx * dy * dz
+        return 0 
+}
 
+function setCamera(canvas: HTMLCanvasElement, scene: Scene) {
+    let cameraConfig = CameraConfig.getInstance()
+    var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, 1, cameraConfig.viewboxCenter, scene);    
+    camera.attachControl(canvas, true);
+    camera.zoomToMouseLocation = true;
+    camera.inputs.addGamepad();
+                      
+    // console.log(distance, minCoords, targetPosition);
+    camera.onViewMatrixChangedObservable.add(() => 
+    {         
+        if(cameraConfig.cameraRadius._x != camera.radius)
+        {
+            cameraConfig.cameraRadius = new Vector3(camera.radius);
+            cameraConfig.viewboxVolume = cameraConfig.cameraRadius._x * cameraConfig.cameraRadius._y * cameraConfig.cameraRadius._z;
+            cameraConfig.viewboxMin = cameraConfig.viewboxCenter.subtract(cameraConfig.cameraRadius);
+            cameraConfig.viewboxMax = cameraConfig.viewboxCenter.add(cameraConfig.cameraRadius);
 
-export async function createScene(file_url: string, filename: string, partType: string, canvas: HTMLCanvasElement, engine: Engine, usePointCloudSystem: boolean = true, displayOutline: boolean = true) {    var scene = new Scene(engine);
+            return;
+        }
+
+        let viewboxMin = camera.target.subtract(cameraConfig.cameraRadius)
+        let viewboxMax = camera.target.add(cameraConfig.cameraRadius)
+        if (boxIntersect(viewboxMin, viewboxMax, cameraConfig.viewboxMin, cameraConfig.viewboxMax) / cameraConfig.viewboxVolume < 0.75)
+        {
+            cameraConfig.viewboxMin = viewboxMin
+            cameraConfig.viewboxMax = viewboxMax
+            cameraConfig.viewboxCenter = camera.target                    
+        }                                
+        
+    });     
+}
+
+export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true): Promise<[Scene, Mesh, StackPanel]>
+ {    
+    var scene = new Scene(engine);
     scene.createDefaultLight(true);
-
-    var coordinatesPath = partType + "/Coordinates";
-    var densityPath = partType + "/Density";
-
-    var hdf5File = new Hdf5File();
-    await hdf5File.open(file_url, filename);
-
-    var allCoordsGlobal = hdf5File.getElements(coordinatesPath);
-    let minCoords = min(allCoordsGlobal, 0);
-    var coordinatesShape = hdf5File.getElementsShape(coordinatesPath);
-    var allDensitiesGlobal = hdf5File.getElements(densityPath) as Array<number>;
-
-    var maxDensity = max(allDensitiesGlobal) as number;
-    allDensitiesGlobal = divide(allDensitiesGlobal, maxDensity) as Array<number>;    
-    if (!usePointCloudSystem) {
-        const wireFrameMaterial = new StandardMaterial("wireFrameMaterial", scene);
-        wireFrameMaterial.wireframe = true;
-        drawSpheres(scene, coordinatesShape, allCoordsGlobal, wireFrameMaterial);
-        setCamera(
-            canvas,
-            scene,
-            new Vector3(minCoords[0], minCoords[1], minCoords[2]),
-            new Vector3(allCoordsGlobal[1][0], allCoordsGlobal[1][1], allCoordsGlobal[1][2])
-        );
-    }
-    else {
-        var colorConfig = {
-            "min_color": new Color3(0, 0, 0),
-            "max_color": new Color3(1, 1, 1),
-            "min_density": min(allDensitiesGlobal),
-            "max_density": max(allDensitiesGlobal),
-            "automatic_opacity": false,
-        };
-        var positionAndColorParticles = function (particle: CloudPoint, i: number, _s: number) {            
-
-            particle.position = new Vector3(allCoordsGlobal[i][0], allCoordsGlobal[i][1], allCoordsGlobal[i][2]);
-            particle.color = calcColor(colorConfig, allDensitiesGlobal[i]); //still needed for not own shader part           
-        }                
-                
-        var pcs = new PointsCloudSystem("pcs",2, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.
-        pcs.addPoints(coordinatesShape[0], positionAndColorParticles);                
+        var pcs = new PointsCloudSystem("pcs",2, scene); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
         var pcsMesh = await pcs.buildMeshAsync();    
         pcsMesh.hasVertexAlpha = true;                                                
         pcsMesh.showBoundingBox = true; 
-
-        var originalPcsMaterial: Nullable<Material> = null;           
-        if (useOwnShader)       
-            originalPcsMaterial = useOwnShaderForMesh(pcsMesh, scene, colorConfig,allDensitiesGlobal);
+    
+        useOwnShaderForMesh(pcsMesh, scene, colorConfig);
         
         var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-        var timeConfig = {
-            "current_snapnum": 75,
-            "min_snapnum": 0,
-            "max_snapnum": 99,
-            "number_of_interpolations": 100,
-            "is_active": false,
-            "t": 0,
-            "text_object_snapnum": null,
-            "slider_object_snapnum": null,
-            "text_object_interpolation": null,            
-            "minimum_fps": 3,
-            "mesh": pcsMesh
-        } 
 
-        buildGUI(advancedTexture, pcs, originalPcsMaterial, pcsMesh, colorConfig, timeConfig, allDensitiesGlobal);
+
+        
+        let guiPanel = buildGUI(advancedTexture, pcs, pcsMesh, colorConfig, timeConfig);
         setCamera(
             canvas,
-            scene,
-            new Vector3(minCoords[0], minCoords[1], minCoords[2]),
-            new Vector3(allCoordsGlobal[1][0], allCoordsGlobal[1][1], allCoordsGlobal[1][2]),            
-            minCoords,
-            pcsMesh
+            scene           
         );
-        
-    }
 
-    
-
-    return scene;
+    return [scene, pcsMesh, guiPanel];
 }
 
-function useOwnShaderForMesh(mesh: Mesh, scene: Scene, colorConfig:ColorConfig, allDensitiesGlobal: number[]): Nullable<Material>
+function useOwnShaderForMesh(mesh: Mesh, scene: Scene, colorConfig:Record<string,any>)
 {          
-    mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
-    var shaderMaterial = new ShaderMaterial("shader", scene, "./scatteredDataWithSize",{                                    
+    // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
+    var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
     attributes: ["uv", "densities", "spline"],
-    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "cameraPosition", "t"]                
+    uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "t"]                
     });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);
-    shaderMaterial.setFloat("min_density", colorConfig.min_density);
-    shaderMaterial.setFloat("max_density", colorConfig.max_density);        
-    shaderMaterial.setVector3("cameraPosition", Vector3.Zero());
+    // shaderMaterial.setFloat("min_density", colorConfig.min_density);
+    // shaderMaterial.setFloat("max_density", colorConfig.max_density); 
     shaderMaterial.setFloat("t", 0);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
-    let tmpMaterial = mesh.material;
-    mesh.material = shaderMaterial; 
-    return tmpMaterial;               
+    mesh.material = shaderMaterial;             
 }
