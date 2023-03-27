@@ -129,12 +129,14 @@ function placeholderForShader(particle:CloudPoint, i: number, _s: number){
 }
 
 async function updateMesh(data: Record<string,any>, pcs: PointsCloudSystem, material: ShaderMaterial) {    
+    console.log(data.splines)
     pcs.addPoints((data.splines as Array<any>).length, placeholderForShader);      
     var pcsMesh = await pcs.buildMeshAsync();
     
     pcsMesh.hasVertexAlpha = true;                                                
     pcsMesh.showBoundingBox = true;
     pcsMesh.material = material;
+    
     pcsMesh.setVerticesData("splines", data.splines, false, 1);
     pcsMesh.setVerticesData("densities", data.densities, false, 1);
 }
