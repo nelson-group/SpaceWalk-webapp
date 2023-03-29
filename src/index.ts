@@ -4,9 +4,6 @@ import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, Clou
 import { max, number } from "mathjs";
 import {StackPanel, Slider} from "@babylonjs/gui"
 
-let dowloadInProcess = false
-let finishedDownload = false
-
 var timeConfig = {
     "current_snapnum": 75,
     "min_snapnum": 0,
@@ -17,8 +14,30 @@ var timeConfig = {
     "text_object_snapnum": null,
     "slider_object_snapnum": null,
     "text_object_interpolation": null,            
-    "minimum_fps": 3    
+    "minimum_fps": 25
 } 
+
+export class DownloadControl{
+  public static downloadInProcess = false
+  private static _finishedDownload = false
+  private static _downloadHTML = document.getElementById("downloading")!;
+
+  public static get finishedDownload() {
+    return this._finishedDownload;
+  }
+
+  public static set finishedDownload(finishedDownload: boolean) {  
+    if (!finishedDownload)
+      this._downloadHTML.innerHTML = "Downloading";
+    else
+      this._downloadHTML.innerHTML = "Download finished";
+      
+    this._finishedDownload = finishedDownload;
+  }
+
+  
+}
+
 
 var colorConfig = {
     "min_color": new Color3(0, 0, 0),
@@ -37,7 +56,7 @@ let batch_size_lod = 500;
 async function main() {
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
     const divFPS = document.getElementById("fps")!;
-    const divDownloading = document.getElementById("downloading")!;
+    
 
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     var [scene, material, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);
@@ -51,9 +70,9 @@ async function main() {
         divFPS.innerHTML = engine.getFps().toFixed() + " fps";
         scene.render();
         // if (call < 1)
-        if(!dowloadInProcess && !finishedDownload)        
+        if(!DownloadControl.downloadInProcess && !DownloadControl.finishedDownload)        
         {
-            dowloadInProcess = true;
+          DownloadControl.downloadInProcess = true;
             const payload = {
                     "node_indices": node_indices,
                     "level_of_detail": level_of_detail,
@@ -77,21 +96,20 @@ async function main() {
                 .then(data => {
                 // console.log('Success:', data);
                 if ((data.splines_a as Array<any>).length == 0)
-                {
-                    divDownloading.innerHTML = "download finished";
-                    finishedDownload = true
+                {                    
+                    DownloadControl.finishedDownload = true;
+                    DownloadControl.downloadInProcess = false
                     return
                 }
                 // if (call < 1)
                   guiUpdate(data, colorConfig, minSlider, maxSlider, material);                                    
                   updateMesh(data, material, scene)
-                  updateMetaDataOnClient(data);
-                
-                  dowloadInProcess = false;
+                  updateMetaDataOnClient(data);                  
+                  DownloadControl.downloadInProcess = false;
                 })
                 .catch(error => {
                   console.error('Error:', error);
-                  dowloadInProcess = false;
+                  DownloadControl.downloadInProcess = false;
                 });
         }        
     });
@@ -100,8 +118,7 @@ async function main() {
 
 await main();
 async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>, material:ShaderMaterial) {
-  let change = false
-  console.log(dataResponse.min_density, dataResponse.max_density)
+  let change = false  
     if (colorConfig.min_density > dataResponse.min_density)
     {
       colorConfig.min_density = dataResponse.min_density       

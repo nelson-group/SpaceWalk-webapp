@@ -7,6 +7,7 @@ import { VectorFieldVisualizer } from "./arrow";
 
 import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, StackPanel } from "@babylonjs/gui";
+import { DownloadControl } from "..";
 
 export type camera_information_json = {
     x: number;
@@ -27,7 +28,7 @@ export class CameraConfig {
     private constructor() {
         this.viewboxCenter = new Vector3(6898.798828125, 24018.212890625, 20964.0625);
         this.cameraRadius = new Vector3(500,500,500);
-        this.viewboxVolume = this.cameraRadius._x * this.cameraRadius._y * this.cameraRadius._z
+        this.viewboxVolume = this.cameraRadius._x * this.cameraRadius._y * this.cameraRadius._z * 8
         this.viewboxMin = this.viewboxCenter.subtract(this.cameraRadius)
         this.viewboxMax = this.viewboxCenter.add(this.cameraRadius)
      }
@@ -54,7 +55,7 @@ function boxIntersect(minBox: Vector3, maxBox: Vector3, minCamera: Vector3, maxC
         return 0 
 }
 
-function setCamera(canvas: HTMLCanvasElement, scene: Scene) {
+function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<string,any>) {
     let cameraConfig = CameraConfig.getInstance()
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
     camera.attachControl(canvas, true);
@@ -65,11 +66,11 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene) {
     {         
         if(cameraConfig.cameraRadius._x != camera.radius)
         {
-            cameraConfig.cameraRadius = new Vector3(camera.radius);
+            cameraConfig.cameraRadius = new Vector3(camera.radius, camera.radius,camera.radius);
             cameraConfig.viewboxVolume = cameraConfig.cameraRadius._x * cameraConfig.cameraRadius._y * cameraConfig.cameraRadius._z;
             cameraConfig.viewboxMin = cameraConfig.viewboxCenter.subtract(cameraConfig.cameraRadius);
             cameraConfig.viewboxMax = cameraConfig.viewboxCenter.add(cameraConfig.cameraRadius);
-
+            DownloadControl.finishedDownload = false 
             return;
         }
 
@@ -79,7 +80,8 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene) {
         {
             cameraConfig.viewboxMin = viewboxMin
             cameraConfig.viewboxMax = viewboxMax
-            cameraConfig.viewboxCenter = camera.target                    
+            cameraConfig.viewboxCenter = camera.target 
+            DownloadControl.finishedDownload = false                   
         }                                
         
     });     
@@ -99,7 +101,8 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
     let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig);
     setCamera(
         canvas,
-        scene           
+        scene,
+        timeConfig          
     );
 
     return [scene, material, guiPanel];
