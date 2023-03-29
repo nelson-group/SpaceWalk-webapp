@@ -1,11 +1,7 @@
 import { createScene, CameraConfig } from "./utils/sceneryWithSplines";  
- 
-const file_url = "data/tng/subhalos/70/442304/cutout_70_442304_70.hdf5";
-const filename = "XYZ";
-const partType = "PartType0";
 
-import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3 } from "@babylonjs/core";
-import { number } from "mathjs";
+import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray } from "@babylonjs/core";
+import { max, number } from "mathjs";
 import {StackPanel, Slider} from "@babylonjs/gui"
 
 let dowloadInProcess = false
@@ -44,7 +40,7 @@ async function main() {
     const divDownloading = document.getElementById("downloading")!;
 
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-    var [scene, pcs, material, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);
+    var [scene, material, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);
     let minSlider:Nullable<Slider> = guiPanel.getChildByName("min_opacity_slider") as Slider
     let maxSlider:Nullable<Slider> = guiPanel.getChildByName("max_opacity_slider") as Slider
     window.addEventListener('resize', function () {
@@ -54,6 +50,7 @@ async function main() {
     engine.runRenderLoop(function () {
         divFPS.innerHTML = engine.getFps().toFixed() + " fps";
         scene.render();
+        // if (call < 1)
         if(!dowloadInProcess && !finishedDownload)        
         {
             dowloadInProcess = true;
@@ -78,16 +75,17 @@ async function main() {
                   return response.json();
                 })
                 .then(data => {
-                console.log('Success:', data);
-                if ((data.splines as Array<any>).length == 0)
+                // console.log('Success:', data);
+                if ((data.splines_a as Array<any>).length == 0)
                 {
                     divDownloading.innerHTML = "download finished";
                     finishedDownload = true
                     return
                 }
-
+                // if (call < 1)
                   guiUpdate(data, colorConfig, minSlider, maxSlider);
-                  updateMesh(data, pcs, material)
+                                    
+                    updateMesh(data, material, scene)
                   updateMetaDataOnClient(data);
                 
                   dowloadInProcess = false;
@@ -111,9 +109,11 @@ async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<s
         if (minSlider && maxSlider)
         {
             minSlider.minimum = colorConfig.min_density
-            maxSlider.minimum = colorConfig.min_density
+            maxSlider.minimum = colorConfig.min_density            
             minSlider.maximum = colorConfig.max_density
             maxSlider.maximum = colorConfig.max_density
+            minSlider.value = colorConfig.min_density
+            maxSlider.value = colorConfig.max_density
         }
       }
 }
@@ -122,23 +122,39 @@ function updateMetaDataOnClient(data: Record<string,any>) {
     level_of_detail = data.level_of_detail
     node_indices = data.node_indices    
 }
+let global_splines_d: Array<any>
 
-let initVector = new Vector3(0,0,0)
-function placeholderForShader(particle:CloudPoint, i: number, _s: number){
-    particle.position = initVector;
+function placeholderForShader(particle:CloudPoint, i: number, _s: number){ 
+    particle.position = new Vector3(global_splines_d[i * 3], global_splines_d[i * 3 + 1], global_splines_d[i * 3 + 2])
 }
 
-async function updateMesh(data: Record<string,any>, pcs: PointsCloudSystem, material: ShaderMaterial) {    
-    console.log(data.splines)
-    pcs.addPoints((data.splines as Array<any>).length, placeholderForShader);      
-    var pcsMesh = await pcs.buildMeshAsync();
+let snapPcs:Record<number,PointsCloudSystem> = {};
+let call = 0
+async function updateMesh(data: Record<string,any>, material: ShaderMaterial, scene:Scene) {         
+
+    global_splines_d = data.splines_d;  
+    let pcs2: PointsCloudSystem
+    if (snapPcs[timeConfig.current_snapnum + call])
+      pcs2 = snapPcs[timeConfig.current_snapnum];
+    else
+    {
+      let pcsName = "pcs" + timeConfig.current_snapnum + call;
+      pcs2 = new PointsCloudSystem(pcsName, 20, scene);
+      snapPcs[timeConfig.current_snapnum + call++] = pcs2;
+      pcs2.addPoints((data.densities as Array<any>).length, placeholderForShader);  
+      var pcsMesh = await pcs2.buildMeshAsync(material);
+      pcsMesh.hasVertexAlpha = true;                                                
+      // pcsMesh.showBoundingBox = true;    
+      pcsMesh.setVerticesData("densities", data.densities as FloatArray, false, 2);   
+      pcsMesh.setVerticesData("splinesA", data.splines_a as FloatArray, false, 3);
+      pcsMesh.setVerticesData("splinesB", data.splines_b as FloatArray, false, 3);
+      pcsMesh.setVerticesData("splinesC", data.splines_c as FloatArray, false, 3);      
+    }
+ 
+    console.log(call)
+    // var pcsMesh = await pcs.buildMeshAsync();
     
-    pcsMesh.hasVertexAlpha = true;                                                
-    pcsMesh.showBoundingBox = true;
-    pcsMesh.material = material;
-    
-    pcsMesh.setVerticesData("splines", data.splines, false, 1);
-    pcsMesh.setVerticesData("densities", data.densities, false, 1);
+  
 }
 
 

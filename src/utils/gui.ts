@@ -41,8 +41,8 @@ async function timeClock()
     // timeConfigGlobal.text_object_snapnum.text = "Snapnum: " + timeConfigGlobal.current_snapnum
         timeConfigGlobal.slider_object_snapnum.value = timeConfigGlobal.current_snapnum
 
-    if (timeConfigGlobal.mesh)
-        (timeConfigGlobal.mesh.material as ShaderMaterial).setFloat("t", timeConfigGlobal.t);
+    if (timeConfigGlobal.material)
+        (timeConfigGlobal.material as ShaderMaterial).setFloat("t", timeConfigGlobal.t);
     
     if (timeConfigGlobal.text_object_interpolation)
         timeConfigGlobal.text_object_interpolation.text = "Interpolation: " + roundNumber(timeConfigGlobal.t)
@@ -108,7 +108,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     min_slider.onValueChangedObservable.add(function(value) {
         min_opacity_text.text = "Min Density: " + roundNumber(value);
         colorConfig.min_density = value;
-        currentMaterial.setFloat("min_density", colorConfig.min_density);
+        currentMaterial.setFloat("min_density", value);
     });
     panel.addControl(min_slider);
 
