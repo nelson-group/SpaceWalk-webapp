@@ -24,7 +24,7 @@ var colorConfig = {
     "min_color": new Color3(0, 0, 0),
     "max_color": new Color3(1, 1, 1),
     "min_density": 0,
-    "max_density": 0,
+    "max_density": 1e-12,
     "automatic_opacity": false,
 };
 
@@ -83,9 +83,8 @@ async function main() {
                     return
                 }
                 // if (call < 1)
-                  guiUpdate(data, colorConfig, minSlider, maxSlider);
-                                    
-                    updateMesh(data, material, scene)
+                  guiUpdate(data, colorConfig, minSlider, maxSlider);                                    
+                  updateMesh(data, material, scene)
                   updateMetaDataOnClient(data);
                 
                   dowloadInProcess = false;
@@ -101,21 +100,26 @@ async function main() {
 
 await main();
 async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>) {
-    if (colorConfig.min_density != dataResponse.min_density || 
-        colorConfig.max_density != dataResponse.max_density)
-      {
-        colorConfig.min_density = dataResponse.min_density
-        colorConfig.max_density = dataResponse.max_density
-        if (minSlider && maxSlider)
-        {
-            minSlider.minimum = colorConfig.min_density
-            maxSlider.minimum = colorConfig.min_density            
-            minSlider.maximum = colorConfig.max_density
-            maxSlider.maximum = colorConfig.max_density
-            minSlider.value = colorConfig.min_density
-            maxSlider.value = colorConfig.max_density
-        }
-      }
+  let change = false
+  console.log(dataResponse.min_density, dataResponse.max_density)
+    if (colorConfig.min_density > dataResponse.min_density)
+    {
+      colorConfig.min_density = dataResponse.min_density       
+      change = true
+    }
+    else if (colorConfig.max_density  < dataResponse.max_density)
+    {
+      colorConfig.max_density = dataResponse.max_density
+      change = true
+    }
+
+    if (minSlider && maxSlider && change)
+    {
+        minSlider.minimum = colorConfig.min_density
+        maxSlider.minimum = colorConfig.min_density            
+        minSlider.maximum = colorConfig.max_density
+        maxSlider.maximum = colorConfig.max_density 
+    }
 }
 
 function updateMetaDataOnClient(data: Record<string,any>) {
@@ -141,7 +145,7 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
       let pcsName = "pcs" + timeConfig.current_snapnum + call;
       pcs2 = new PointsCloudSystem(pcsName, 20, scene);
       snapPcs[timeConfig.current_snapnum + call++] = pcs2;
-      pcs2.addPoints((data.densities as Array<any>).length, placeholderForShader);  
+      pcs2.addPoints(data.nParticles, placeholderForShader);  
       var pcsMesh = await pcs2.buildMeshAsync(material);
       pcsMesh.hasVertexAlpha = true;                                                
       // pcsMesh.showBoundingBox = true;    
@@ -153,8 +157,7 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
  
     console.log(call)
     // var pcsMesh = await pcs.buildMeshAsync();
-    
-  
+
 }
 
 

@@ -26,6 +26,6 @@ void main()
     
     gl_Position = worldViewProjection * vec4(positionNew, 1.0);  
     vdensityVary = densities;
-    gl_PointSize = 20.;
+    gl_PointSize = 2.;
 }  
 

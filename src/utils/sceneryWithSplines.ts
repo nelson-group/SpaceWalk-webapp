@@ -114,8 +114,8 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);
-    // shaderMaterial.setFloat("min_density", colorConfig.min_density);
-    // shaderMaterial.setFloat("max_density", colorConfig.max_density); 
+    shaderMaterial.setFloat("min_density", colorConfig.min_density);
+    shaderMaterial.setFloat("max_density", colorConfig.max_density); 
     shaderMaterial.setFloat("t", timeConfig.t);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
