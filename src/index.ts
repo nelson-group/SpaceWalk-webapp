@@ -83,7 +83,7 @@ async function main() {
                     return
                 }
                 // if (call < 1)
-                  guiUpdate(data, colorConfig, minSlider, maxSlider);                                    
+                  guiUpdate(data, colorConfig, minSlider, maxSlider, material);                                    
                   updateMesh(data, material, scene)
                   updateMetaDataOnClient(data);
                 
@@ -99,7 +99,7 @@ async function main() {
 }
 
 await main();
-async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>) {
+async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>, material:ShaderMaterial) {
   let change = false
   console.log(dataResponse.min_density, dataResponse.max_density)
     if (colorConfig.min_density > dataResponse.min_density)
@@ -108,8 +108,9 @@ async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<s
       change = true
     }
     else if (colorConfig.max_density  < dataResponse.max_density)
-    {
+    {      
       colorConfig.max_density = dataResponse.max_density
+      material.setFloat("max_dens_in_data", dataResponse.max_density)
       change = true
     }
 

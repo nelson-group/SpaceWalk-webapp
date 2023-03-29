@@ -100,7 +100,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     min_slider.width = "200px";
     min_slider.onValueChangedObservable.add(function(value) {
         min_opacity_text.text = "Min Density: " + value.toFixed(7);        
-        currentMaterial.setFloat("min_density", value);
+        currentMaterial.setFloat("min_density", value / colorConfig.max_density); //division is done for normalization max_density is the maximum density over complete current data
     });
     panel.addControl(min_slider);
 
@@ -117,7 +117,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     max_slider.width = "200px";
     max_slider.onValueChangedObservable.add(function(value) {
         max_opacity_text.text = "Max Density: " + value.toFixed(7);        
-        currentMaterial.setFloat("max_density", value);
+        currentMaterial.setFloat("max_density", value / colorConfig.max_density); //division is done for normalization max_density is the maximum density over complete current data
     });
     panel.addControl(max_slider);
 
