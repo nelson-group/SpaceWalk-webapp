@@ -1,8 +1,9 @@
 import { createScene, CameraConfig } from "./utils/sceneryWithSplines";  
 
-import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray } from "@babylonjs/core";
+import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray, Material } from "@babylonjs/core";
 import { max, min, number } from "mathjs";
-import {StackPanel, Slider} from "@babylonjs/gui"
+import {StackPanel, Slider, TextBlock} from "@babylonjs/gui"
+import { roundNumber } from "./utils/gui";
 
 var timeConfig = {
     "current_snapnum": 75,
@@ -14,7 +15,8 @@ var timeConfig = {
     "text_object_snapnum": null,
     "slider_object_snapnum": null,
     "text_object_interpolation": null,            
-    "minimum_fps": 25
+    "minimum_fps": 25,
+    "material": null
 } 
 
 var colorConfig = {
@@ -29,8 +31,9 @@ var colorConfig = {
 
 export class DownloadControl{
   public static downloadInProcess = false
-  public static batch_size_lod = 500;
-
+  public static batch_size_lod = 500; 
+  public static timeConfig:Record<string,any> = {}
+  
   private static _finishedDownload = false
   private static _downloadHTML = document.getElementById("downloading")!;
   private static _internalSnapnum = -1
@@ -64,18 +67,24 @@ export class DownloadControl{
   }
 
   private static async updatePcsVisibility(oldSnapnum:number, newSnapnum:number)
-  {
-      if(this.pcsDictonary[oldSnapnum])
-        this.pcsDictonary[oldSnapnum].forEach(element => {
-          if (element.mesh)
-            element.mesh.visibility = 0;
-        });
+  { 
+    let old_interpolation_state = this.timeConfig.is_active;
+    this.timeConfig.is_active = false;
 
-      if(this.pcsDictonary[newSnapnum])
-        this.pcsDictonary[newSnapnum].forEach(element => {
-          if (element.mesh)
-            element.mesh.visibility = 1;
-        });
+    if(this.pcsDictonary[oldSnapnum])
+      this.pcsDictonary[oldSnapnum].forEach(element => {
+        if (element.mesh)
+          element.mesh.visibility = 0;
+      });
+
+    timeConfig.t = 0;
+    if(this.pcsDictonary[newSnapnum])
+      this.pcsDictonary[newSnapnum].forEach(element => {
+        if (element.mesh)
+          element.mesh.visibility = 1;
+      });
+
+      this.timeConfig.is_active = old_interpolation_state;
   }
 
   public static set internalSnapnum(newSnapNnum: number) {  
@@ -130,6 +139,7 @@ async function main() {
     const divFPS = document.getElementById("fps")!;
     const cameraConfig =  CameraConfig.getInstance();
     cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!);
+    DownloadControl.timeConfig = timeConfig;
     
     const response = await fetch(url + "get/init/" + simulationName + "/" + timeConfig.current_snapnum, {
       method: 'GET',
@@ -195,9 +205,30 @@ async function main() {
         }        
     });
 
+
+    window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
 }
 
 await main();
+
+async function timeClock()
+{
+    if (!timeConfig.is_active)
+      return;
+    
+    timeConfig.t += (1 / timeConfig.number_of_interpolations)
+    if (timeConfig.t > 1)            
+      timeConfig.current_snapnum += 1
+      
+    if (timeConfig.material)
+      (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
+    
+    if (timeConfig.slider_object_snapnum && (timeConfig.slider_object_snapnum as Slider).value != timeConfig.current_snapnum)    
+      (timeConfig.slider_object_snapnum as Slider).value = timeConfig.current_snapnum    
+    
+    if (timeConfig.text_object_interpolation)
+      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation: " + roundNumber(timeConfig.t)
+}
 
 function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>) {
     let quantiles = dataResponse.density_quantiles

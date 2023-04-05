@@ -18,31 +18,7 @@ export function calcColor(config: Record<string,any>, density: number) {
     return color4;
 }
 
-var timeConfigGlobal: Record<string,any>;
-
-async function timeClock()
-{
-    if (!timeConfigGlobal.is_active)
-        return;
-    
-    timeConfigGlobal.t += (1 / timeConfigGlobal.number_of_interpolations)
-    if (timeConfigGlobal.t >= 1)    
-        // timeConfigGlobal.t = 0
-        timeConfigGlobal.current_snapnum += 1        
-    
-    if (timeConfigGlobal.slider_object_snapnum && timeConfigGlobal.slider_object_snapnum.value != timeConfigGlobal.current_snapnum)
-    // timeConfigGlobal.text_object_snapnum.text = "Snapnum: " + timeConfigGlobal.current_snapnum
-        timeConfigGlobal.slider_object_snapnum.value = timeConfigGlobal.current_snapnum
-
-    if (timeConfigGlobal.material)
-        (timeConfigGlobal.material as ShaderMaterial).setFloat("t", timeConfigGlobal.t);
-    
-    if (timeConfigGlobal.text_object_interpolation)
-        timeConfigGlobal.text_object_interpolation.text = "Interpolation: " + roundNumber(timeConfigGlobal.t)
-}
- 
 export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial, colorConfig: Record<string,any>, timeConfig:Record<string,any>) {
-    timeConfigGlobal = timeConfig;
     let panel = new StackPanel();
     panel.width = "400px";
     panel.isVertical = true;
@@ -138,8 +114,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     snapnum_slider.step = 1;
     snapnum_slider.onValueChangedObservable.add(function(value) {        
         snapnum_text.text = "Snapnum: " + value;
-        timeConfigGlobal.current_snapnum = value
-        timeConfigGlobal.t = 0
+        timeConfig.current_snapnum = value
+        timeConfig.t = 0
     });
     panel.addControl(snapnum_slider);   
     let interpolation_text = new TextBlock("InterpolationText");
@@ -161,13 +137,11 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     timeConfig.text_object_interpolation = interpolation_text;
     timeConfig.text_object_snapnum = snapnum_text;
     timeConfig.slider_object_snapnum = snapnum_slider;
-
-    window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
     
     return panel
 }
 
 
-function roundNumber(number: number) {
+export function roundNumber(number: number) {
     return (Math.round(number * 100) / 100).toFixed(2);
 }
