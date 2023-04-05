@@ -125,6 +125,8 @@ let simulationName = "TNG50-4"
 async function main() {
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
     const divFPS = document.getElementById("fps")!;
+    const cameraConfig =  CameraConfig.getInstance();
+    cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!);
     
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     var [scene, material, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);    
@@ -147,7 +149,7 @@ async function main() {
                     "node_indices": DownloadControl.get_node_indices(timeConfig.current_snapnum),
                     "level_of_detail": DownloadControl.get_level_of_detail(timeConfig.current_snapnum),
                     "batch_size_lod": DownloadControl.batch_size_lod,
-                    "camera_information": CameraConfig.getInstance().getCameraConfig()
+                    "camera_information": cameraConfig.getCameraConfig()
               };
             
             fetch(url + simulationName + "/" + timeConfig.current_snapnum, {
