@@ -187,7 +187,6 @@ async function main() {
                   return response.json();
                 })
                 .then(data => {
-                // console.log('Success:', data);
                 if ((data.splines_a as Array<any>).length == 0)
                 {                    
                     DownloadControl.finishedDownload = true;
@@ -195,7 +194,7 @@ async function main() {
                     return
                 }
                   updateMesh(data, material, scene)                  
-                  updateMetaDataOnClient(data, timeConfig.current_snapnum);                  
+                  updateMetaDataOnClient(data, data.snapnum);                  
                   DownloadControl.downloadInProcess = false;
                 })
                 .catch(error => {
@@ -204,7 +203,6 @@ async function main() {
                 });
         }        
     });
-
 
     window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
 }
@@ -246,22 +244,20 @@ function placeholderForShader(particle:CloudPoint, i: number, _s: number){
 }
 
 async function updateMesh(data: Record<string,any>, material: ShaderMaterial, scene:Scene) {         
-    global_splines_d = data.splines_d;  
+  global_splines_d = data.splines_d;  
     let pcsName = "pcs" + timeConfig.current_snapnum + call++;
     let pcs2 = new PointsCloudSystem(pcsName, 20, scene);
-    DownloadControl.addPcsToDict(pcs2, timeConfig.current_snapnum);
+    DownloadControl.addPcsToDict(pcs2, data.snapnum);
     pcs2.addPoints(data.nParticles, placeholderForShader);  
     var pcsMesh = await pcs2.buildMeshAsync(material);
-    pcsMesh.hasVertexAlpha = true;                                                
-    // pcsMesh.showBoundingBox = true;    
+    pcsMesh.hasVertexAlpha = true;          
     pcsMesh.setVerticesData("densities", data.densities as FloatArray, false, 2);   
     pcsMesh.setVerticesData("splinesA", data.splines_a as FloatArray, false, 3);
     pcsMesh.setVerticesData("splinesB", data.splines_b as FloatArray, false, 3);
     pcsMesh.setVerticesData("splinesC", data.splines_c as FloatArray, false, 3);      
-
- 
-    console.log(call)
-    // var pcsMesh = await pcs.buildMeshAsync();
+    if (timeConfig.current_snapnum != data.snapnum)
+      pcsMesh.visibility = 0;
+    console.log(call)    
 }
 
 function updateMetaDataOnClient(data: Record<string,any>, current_snapnum: number) {

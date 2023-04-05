@@ -11,6 +11,7 @@ varying vec2 vdensityVary;
 
 void main() {
    vec2 vdensityBoth = (vdensityVary - min_density) / (max_density - min_density);
+   vdensityBoth = min(vdensityBoth, 1.);
    float min_dens_normalized = min_density / max_density;
    float vdensity = vdensityBoth[0] + (vdensityBoth[1] - vdensityBoth[0]) * t;
    float one_minus_d = 1. - vdensity; // normalization done by gpu
@@ -18,9 +19,9 @@ void main() {
    float opacity = min(max(0., vdensity - min_dens_normalized) / (1. - min_dens_normalized), 1.);
 
    vec4 newColor = vec4(color, opacity);
-   gl_FragColor = min(newColor + gl_FragColor, 1.) ;   
+   gl_FragColor = min(newColor, 1.) ;   
    
-   // gl_FragColor = vec4(vdensityBoth[0],vdensityBoth[1], 0, 0.2);
+   // gl_FragColor = vec4(vdensityBoth[0],vdensityBoth[0], vdensityBoth[0], 0.2);
 }
 
 
