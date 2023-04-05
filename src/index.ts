@@ -1,7 +1,7 @@
 import { createScene, CameraConfig } from "./utils/sceneryWithSplines";  
 
 import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray } from "@babylonjs/core";
-import { max, number } from "mathjs";
+import { max, min, number } from "mathjs";
 import {StackPanel, Slider} from "@babylonjs/gui"
 
 var timeConfig = {
@@ -16,7 +16,16 @@ var timeConfig = {
     "text_object_interpolation": null,            
     "minimum_fps": 25
 } 
-let call = 0
+
+var colorConfig = {
+  "min_color": new Color3(0, 0, 0),
+  "max_color": new Color3(1, 1, 1),
+  "min_density": 0,
+  "max_density": 1e-12,
+  "automatic_opacity": false,
+  "n_quantiles": 0,
+  "quantiles": Array
+};
 
 export class DownloadControl{
   public static downloadInProcess = false
@@ -110,15 +119,9 @@ export class DownloadControl{
   
 }
 
-var colorConfig = {
-    "min_color": new Color3(0, 0, 0),
-    "max_color": new Color3(1, 1, 1),
-    "min_density": 0,
-    "max_density": 1e-12,
-    "automatic_opacity": false,
-};
+let call = 0;
 
-const url = "http://127.0.0.1:8000/v1/get/splines/";
+const url = "http://127.0.0.1:8000/v1/";
 let simulationName = "TNG50-4"
 
 
@@ -128,11 +131,19 @@ async function main() {
     const cameraConfig =  CameraConfig.getInstance();
     cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!);
     
-    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-    var [scene, material, guiPanel] = await createScene(canvas, engine, colorConfig, timeConfig, true);    
+    const response = await fetch(url + "get/init/" + simulationName + "/" + timeConfig.current_snapnum, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'                  
+      },
+    })
+    const initial_data = await response.json()
 
-    let minSlider:Nullable<Slider> = guiPanel.getChildByName("min_opacity_slider") as Slider
-    let maxSlider:Nullable<Slider> = guiPanel.getChildByName("max_opacity_slider") as Slider
+    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+    
+    colorConfigUpdate(initial_data, colorConfig);
+    var [scene, material] = await createScene(canvas, engine, colorConfig, timeConfig, true);   
+
     window.addEventListener('resize', function () {
         engine.resize();
     });
@@ -152,7 +163,7 @@ async function main() {
                     "camera_information": cameraConfig.getCameraConfig()
               };
             
-            fetch(url + simulationName + "/" + timeConfig.current_snapnum, {
+            fetch(url + "get/splines/" + simulationName + "/" + timeConfig.current_snapnum, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'                  
@@ -173,8 +184,6 @@ async function main() {
                     DownloadControl.downloadInProcess = false
                     return
                 }
-                // if (call < 1)
-                  guiUpdate(data, colorConfig, minSlider, maxSlider, material);                                    
                   updateMesh(data, material, scene)                  
                   updateMetaDataOnClient(data, timeConfig.current_snapnum);                  
                   DownloadControl.downloadInProcess = false;
@@ -189,27 +198,13 @@ async function main() {
 }
 
 await main();
-async function guiUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>, minSlider:Nullable<Slider>, maxSlider:Nullable<Slider>, material:ShaderMaterial) {
-  let change = false  
-    if (colorConfig.min_density > dataResponse.min_density)
-    {
-      colorConfig.min_density = dataResponse.min_density       
-      change = true
-    }
-    else if (colorConfig.max_density  < dataResponse.max_density)
-    {      
-      colorConfig.max_density = dataResponse.max_density
-      material.setFloat("max_dens_in_data", dataResponse.max_density)
-      change = true
-    }
 
-    if (minSlider && maxSlider && change)
-    {
-        minSlider.minimum = colorConfig.min_density
-        maxSlider.minimum = colorConfig.min_density            
-        minSlider.maximum = colorConfig.max_density
-        maxSlider.maximum = colorConfig.max_density 
-    }
+function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>) {
+    let quantiles = dataResponse.density_quantiles
+    colorConfig.min_density = min(quantiles)
+    colorConfig.max_density = max(quantiles)
+    colorConfig.n_quantiles = dataResponse.n_quantiles  
+    colorConfig.quantiles = quantiles
 }
 
 

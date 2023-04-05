@@ -44,7 +44,7 @@ async function timeClock()
 export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial, colorConfig: Record<string,any>, timeConfig:Record<string,any>) {
     timeConfigGlobal = timeConfig;
     let panel = new StackPanel();
-    panel.width = "200px";
+    panel.width = "400px";
     panel.isVertical = true;
     panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
@@ -93,14 +93,16 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     panel.addControl(min_opacity_text);
 
     let min_slider = new Slider("min_opacity_slider");
-    min_slider.minimum = colorConfig.min_density;
-    min_slider.maximum = colorConfig.max_density;
-    min_slider.value = colorConfig.min_density;
+    min_slider.minimum = 0;
+    min_slider.maximum = colorConfig.n_quantiles - 1;
+    min_slider.step = 1;
+    min_slider.value = 0;
     min_slider.height = "20px";
     min_slider.width = "200px";
     min_slider.onValueChangedObservable.add(function(value) {
-        min_opacity_text.text = "Min Density: " + value.toFixed(7);        
-        currentMaterial.setFloat("min_density", value / colorConfig.max_density); //division is done for normalization max_density is the maximum density over complete current data
+        let density = colorConfig.quantiles[value]
+        min_opacity_text.text = "Min Density: " + density.toFixed(12);        
+        currentMaterial.setFloat("min_density", density); 
     });
     panel.addControl(min_slider);
 
@@ -110,14 +112,16 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     panel.addControl(max_opacity_text);
 
     let max_slider = new Slider("max_opacity_slider");
-    max_slider.minimum = colorConfig.min_density;
-    max_slider.maximum = colorConfig.max_density;
-    max_slider.value = colorConfig.max_density;
+    max_slider.minimum = 0;
+    max_slider.maximum = colorConfig.n_quantiles - 1;
+    max_slider.step = 1;
+    max_slider.value = colorConfig.n_quantiles - 1;
     max_slider.height = "20px";
     max_slider.width = "200px";
     max_slider.onValueChangedObservable.add(function(value) {
-        max_opacity_text.text = "Max Density: " + value.toFixed(7);        
-        currentMaterial.setFloat("max_density", value / colorConfig.max_density); //division is done for normalization max_density is the maximum density over complete current data
+        let density = colorConfig.quantiles[value]
+        max_opacity_text.text = "Max Density: " + density.toFixed(12);        
+        currentMaterial.setFloat("max_density", density); 
     });
     panel.addControl(max_slider);
 
