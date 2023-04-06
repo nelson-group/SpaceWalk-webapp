@@ -1,11 +1,15 @@
 import {
     Color3,
-    ShaderMaterial
+    Color4,
+    ShaderMaterial,
+    Vector3,
+    double
 } from "@babylonjs/core";
 
-import { Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider } from "@babylonjs/gui";
+import { Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
 
 import { min, max } from "mathjs";
+import { CameraConfig } from "./sceneryWithSplines";
 
 
 export function calcColor(config: Record<string,any>, density: number) {
@@ -18,7 +22,7 @@ export function calcColor(config: Record<string,any>, density: number) {
     return color4;
 }
 
-export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial, colorConfig: Record<string,any>, timeConfig:Record<string,any>) {
+export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial, colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig) {
     let panel = new StackPanel();
     panel.width = "400px";
     panel.isVertical = true;
@@ -137,6 +141,64 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     timeConfig.text_object_interpolation = interpolation_text;
     timeConfig.text_object_snapnum = snapnum_text;
     timeConfig.slider_object_snapnum = snapnum_slider;
+
+    let camera_text = new TextBlock("CameraPositionText");
+    camera_text.text = "Cameraposition: ";
+    camera_text.height = "30px";
+    panel.addControl(camera_text); 
+
+    let camera_text_x = new TextBlock("CameraPositionTextX");
+    camera_text_x.text = "x: ";
+    camera_text_x.height = "30px";
+    panel.addControl(camera_text_x); 
+    let camera_input_x = new InputText()
+    camera_input_x.height = "30px";
+    camera_input_x.width = "80%";
+    camera_input_x.color = "white";
+    camera_input_x.text = "" + cameraConfig.viewboxCenter.x;
+    panel.addControl(camera_input_x);     
+
+    let camera_text_y = new TextBlock("CameraPositionTextY");
+    camera_text_y.text = "y: ";
+    camera_text_y.height = "30px";
+    panel.addControl(camera_text_y); 
+    let camera_input_y = new InputText()
+    camera_input_y.height = "30px";
+    camera_input_y.width = "80%";
+    camera_input_y.color = "white"
+    camera_input_y.text = "" + cameraConfig.viewboxCenter.y;
+    panel.addControl(camera_input_y);     
+
+    let camera_text_z = new TextBlock("CameraPositionTextZ");
+    camera_text_z.text = "z: ";
+    camera_text_z.height = "30px";    
+    panel.addControl(camera_text_z); 
+
+    let camera_input_z = new InputText()
+    camera_input_z.height = "30px";
+    camera_input_z.width = "80%";
+    camera_input_z.color = "white"
+    camera_input_z.text = "" + cameraConfig.viewboxCenter.z;
+    panel.addControl(camera_input_z);     
+
+    const camera_update_button = Button.CreateSimpleButton("camera_update_button", "update camera target");
+    camera_update_button.height = "30px";
+    camera_update_button.width = "80%";
+    camera_update_button.background = "gray";
+    camera_update_button.onPointerClickObservable.add(function(value) {
+        let x:number = +camera_input_x.text
+        let y:number = +camera_input_y.text
+        let z:number = +camera_input_z.text        
+        if (cameraConfig.camera)
+        {
+            let raduisTmp = cameraConfig.cameraRadius;
+            cameraConfig.camera.target = new Vector3(x, y, z);
+            cameraConfig.camera.position = cameraConfig.camera.target.subtract(new Vector3(raduisTmp.x, 0, 0));
+            cameraConfig.camera.update();
+        }
+    })
+
+    panel.addControl(camera_update_button); 
     
     return panel
 }

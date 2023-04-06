@@ -9,7 +9,7 @@ var timeConfig = {
     "current_snapnum": 75,
     "min_snapnum": 0,
     "max_snapnum": 98,
-    "number_of_interpolations": 100,
+    "number_of_interpolations": 200,
     "is_active": false,
     "t": 0,
     "text_object_snapnum": null,
@@ -152,7 +152,7 @@ async function main() {
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     
     colorConfigUpdate(initial_data, colorConfig);
-    var [scene, material] = await createScene(canvas, engine, colorConfig, timeConfig, true);   
+    var [scene, material] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
 
     window.addEventListener('resize', function () {
         engine.resize();

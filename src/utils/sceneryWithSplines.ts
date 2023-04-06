@@ -5,7 +5,7 @@ import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI} from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput } from "@babylonjs/core";
+import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera } from "@babylonjs/core";
 import { AdvancedDynamicTexture, StackPanel } from "@babylonjs/gui";
 import { DownloadControl } from "..";
 
@@ -25,6 +25,8 @@ export class CameraConfig {
     public viewboxVolume:number
     public viewboxMin:Vector3
     public viewboxMax:Vector3
+    public simulationBoxSize: number    
+    public camera: Nullable<ArcRotateCamera>
 
     private constructor() {
         this.viewboxCenter = new Vector3(7218.33, 24516.7, 21434.0);
@@ -33,6 +35,8 @@ export class CameraConfig {
         this.viewboxMin = this.viewboxCenter.subtract(this.cameraRadius)
         this.viewboxMax = this.viewboxCenter.add(this.cameraRadius)
         this.cameraInfoText = null
+        this.simulationBoxSize = 0
+        this.camera = null
      }
 
     public static getInstance(): CameraConfig {
@@ -52,13 +56,12 @@ export class CameraConfig {
         this.cameraInfoText = htmlElement;
         return true;
     }
-    public updateCameraInfoText(radius: number, position: Vector3)
+    public updateCameraInfoText(radius: number, target: Vector3, position: Vector3)
     {
         if (!this.cameraInfoText)
         return false
 
-
-        this.cameraInfoText.innerHTML = "Camera info: Radius: " + radius + "; Position: ("+ position.x + ", " + position.y +  ", " + position.z + ")" ;
+        this.cameraInfoText.innerHTML = "Camera info: Radius: " + radius + "; Position: ("+ position.x + ", " + position.y +  ", " + position.z + ")"+ "; Target: ("+ target.x + ", " + target.y +  ", " + target.z + ")" ;
         return true;
     }
 }
@@ -75,14 +78,14 @@ function boxIntersect(minBox: Vector3, maxBox: Vector3, minCamera: Vector3, maxC
 function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<string,any>) {
     let cameraConfig = CameraConfig.getInstance()
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
-   
+    cameraConfig.camera = camera;
     camera.attachControl(canvas, true);
     
     (camera.inputs.attached.keyboard as ArcRotateCameraKeyboardMoveInput).panningSensibility = 1;
 
     camera.onViewMatrixChangedObservable.add(() => 
     {       
-        cameraConfig.updateCameraInfoText(cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter)  
+        cameraConfig.updateCameraInfoText(camera.radius, camera.target, camera.position)  
         if(cameraConfig.cameraRadius._x != camera.radius)
         {
             cameraConfig.cameraRadius = new Vector3(camera.radius, camera.radius,camera.radius);
@@ -90,7 +93,6 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
             cameraConfig.viewboxMin = cameraConfig.viewboxCenter.subtract(cameraConfig.cameraRadius);
             cameraConfig.viewboxMax = cameraConfig.viewboxCenter.add(cameraConfig.cameraRadius);
             DownloadControl.finishedDownload = false             
-            return;
         }
 
         let viewboxMin = camera.target.subtract(cameraConfig.cameraRadius)
@@ -106,8 +108,9 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
     });     
 }
 
-export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true): Promise<[Scene, ShaderMaterial, StackPanel]>
+export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true, initial_data: Record<string,any>): Promise<[Scene, ShaderMaterial, StackPanel]>
  {    
+    CameraConfig.getInstance().simulationBoxSize = initial_data["BoxSize"]
     var scene = new Scene(engine);
     scene.createDefaultLight(true);
     // var pcs = new PointsCloudSystem("pcs",20, scene, { updatable: true }); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
@@ -117,7 +120,7 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
 
     var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig);
+    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig, CameraConfig.getInstance());
     setCamera(
         canvas,
         scene,
