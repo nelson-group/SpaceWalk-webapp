@@ -9,12 +9,14 @@ var timeConfig = {
     "current_snapnum": 75,
     "min_snapnum": 0,
     "max_snapnum": 98,
-    "number_of_interpolations": 200,
-    "is_active": false,
-    "t": 0,
+    "n_available_snaps": 0,
+    "available_snaps": null,
     "text_object_snapnum": null,
     "slider_object_snapnum": null,
-    "text_object_interpolation": null,            
+    "text_object_interpolation": null,  
+    "number_of_interpolations": 200,
+    "is_active": false,
+    "t": 0,          
     "minimum_fps": 25,
     "material": null
 } 
@@ -148,6 +150,7 @@ async function main() {
       },
     })
     const initial_data = await response.json()
+    updateTimeConfig(initial_data);
 
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     
@@ -263,5 +266,13 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
 function updateMetaDataOnClient(data: Record<string,any>, current_snapnum: number) {
   DownloadControl.set_level_of_detail(data.level_of_detail, current_snapnum)
   DownloadControl.set_node_indices(data.node_indices, current_snapnum)
+}
+
+function updateTimeConfig(initial_data: Record<string,any>) {
+  timeConfig.n_available_snaps = initial_data.available_snaps.length
+  timeConfig.current_snapnum = min(initial_data.available_snaps)
+  timeConfig.min_snapnum = timeConfig.current_snapnum
+  timeConfig.max_snapnum = max(initial_data.available_snaps)
+  timeConfig.available_snaps = initial_data.available_snaps
 }
 

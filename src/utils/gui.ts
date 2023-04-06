@@ -110,15 +110,16 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     snapnum_text.height = "30px";
     panel.addControl(snapnum_text);
     var snapnum_slider = new Slider();
-    snapnum_slider.minimum = timeConfig.min_snapnum;
-    snapnum_slider.maximum = timeConfig.max_snapnum;
-    snapnum_slider.value = timeConfig.current_snapnum;
+    snapnum_slider.minimum = 0;
+    snapnum_slider.maximum = timeConfig.n_available_snaps - 1;
+    snapnum_slider.value = 0;
     snapnum_slider.height = "20px";
     snapnum_slider.width = "200px";
     snapnum_slider.step = 1;
-    snapnum_slider.onValueChangedObservable.add(function(value) {        
-        snapnum_text.text = "Snapnum: " + value;
-        timeConfig.current_snapnum = value
+    snapnum_slider.onValueChangedObservable.add(function(value) {   
+        let actual_snapnum = timeConfig.available_snaps[value]     
+        snapnum_text.text = "Snapnum: " + actual_snapnum;
+        timeConfig.current_snapnum = actual_snapnum
         timeConfig.t = 0
     });
     panel.addControl(snapnum_slider);   
