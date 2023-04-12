@@ -1,7 +1,7 @@
 import { createScene, CameraConfig } from "./utils/sceneryWithSplines";  
 
 import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray, Material } from "@babylonjs/core";
-import { max, min, number } from "mathjs";
+import { ceil, max, min, number } from "mathjs";
 import {StackPanel, Slider, TextBlock} from "@babylonjs/gui"
 import { roundNumber } from "./utils/gui";
 
@@ -23,12 +23,13 @@ var timeConfig = {
 
 var colorConfig = {
   "min_color": new Color3(0, 0, 0),
-  "max_color": new Color3(1, 1, 1),
+  "max_color": new Color3(1,0, 0),
   "min_density": 0,
   "max_density": 1e-12,
   "automatic_opacity": false,
   "n_quantiles": 0,
-  "quantiles": Array
+  "quantiles": Array,
+  "start_quantile": 0
 };
 
 export class DownloadControl{
@@ -240,6 +241,7 @@ function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record
     colorConfig.max_density = max(quantiles)
     colorConfig.n_quantiles = dataResponse.n_quantiles  
     colorConfig.quantiles = quantiles
+    colorConfig.start_quantile = ceil(colorConfig.n_quantiles / 2)
 }
 
 

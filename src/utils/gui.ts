@@ -70,7 +70,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     panel.addControl(max_color_picker);
 
     let min_opacity_text = new TextBlock();
-    min_opacity_text.text = "Min Density: " + roundNumber(colorConfig.min_density);
+    min_opacity_text.text = "Min Density: " + colorConfig.quantiles[colorConfig.start_quantile].toFixed(11);
     min_opacity_text.height = "30px";    
     min_opacity_text.color = "lightgray";
     panel.addControl(min_opacity_text);
@@ -79,7 +79,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     min_slider.minimum = 0;
     min_slider.maximum = colorConfig.n_quantiles - 1;
     min_slider.step = 1;
-    min_slider.value = 0;
+    min_slider.value = colorConfig.start_quantile;
     min_slider.height = "20px";
     min_slider.width = "200px";
     min_slider.onValueChangedObservable.add(function(value) {
@@ -90,7 +90,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     panel.addControl(min_slider);
 
     let max_opacity_text = new TextBlock();
-    max_opacity_text.text = "Max Density: " + roundNumber(colorConfig.max_density);
+    max_opacity_text.text = "Max Density: " + colorConfig.quantiles[colorConfig.start_quantile].toFixed(11);
     max_opacity_text.height = "30px";
     max_opacity_text.color = "lightgray";
     panel.addControl(max_opacity_text);
@@ -99,7 +99,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     max_slider.minimum = 0;
     max_slider.maximum = colorConfig.n_quantiles - 1;
     max_slider.step = 1;
-    max_slider.value = colorConfig.n_quantiles - 1;
+    max_slider.value = colorConfig.start_quantile;
     max_slider.height = "20px";
     max_slider.width = "200px";
     max_slider.onValueChangedObservable.add(function(value) {
