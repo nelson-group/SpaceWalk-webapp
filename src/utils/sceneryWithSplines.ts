@@ -144,7 +144,7 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
     shaderMaterial.setFloat("max_density", colorConfig.quantiles[colorConfig.start_quantile]);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
-    shaderMaterial.alphaMode = Engine.ALPHA_ADD;
+    shaderMaterial.alphaMode = colorConfig.blendig_modes[0][1];
     timeConfig.material = shaderMaterial;
     
     return shaderMaterial

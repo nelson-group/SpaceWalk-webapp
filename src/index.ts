@@ -29,7 +29,10 @@ var colorConfig = {
   "automatic_opacity": false,
   "n_quantiles": 0,
   "quantiles": Array,
-  "start_quantile": 0
+  "start_quantile": 0,
+  "blendig_modes": [["ALPHA_ADD", Engine.ALPHA_ADD, true], ["ALPHA_COMBINE", Engine.ALPHA_COMBINE, false]
+  , ["ALPHA_SUBTRACT", Engine.ALPHA_SUBTRACT, false], ["ALPHA_MAXIMIZED", Engine.ALPHA_MAXIMIZED, false]
+  , ["ALPHA_MULTIPLY", Engine.ALPHA_MULTIPLY, false], ["ALPHA_ONEONE", Engine.ALPHA_ONEONE, false]],
 };
 
 export class DownloadControl{

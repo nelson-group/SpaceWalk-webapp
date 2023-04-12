@@ -1,14 +1,16 @@
 import {
     Color3,
     Color4,
+    Engine,
+    Material,
     ShaderMaterial,
     Vector3,
     double
 } from "@babylonjs/core";
 
-import { Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
+import {RadioButton, Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
 
-import { min, max } from "mathjs";
+import { min, max, forEach } from "mathjs";
 import { CameraConfig } from "./sceneryWithSplines";
 
 
@@ -210,7 +212,39 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     })
 
     panel.addControl(camera_update_button); 
+
+    var textblock = new TextBlock();
+    textblock.height = "30px";
+    textblock.text = "Blending Modes:"    
+    textblock.color = "lightgray";
+    panel.addControl(textblock);   
+
+    var addRadio = function(text:[string, number, boolean], parent:StackPanel) {
+
+        var button = new RadioButton();
+        button.width = "20px";
+        button.height = "20px";
+        button.color = "white";
+        button.background = "green";     
+        button.isChecked = text[2];
+
+        button.onIsCheckedChangedObservable.add(function(state){
+            if(state)
+                timeConfig.material.alphaMode = text[1]
+        })
+
+        var header = Control.AddHeader(button, text[0], "200px", { isHorizontal: true, controlFirst: true });
+        header.height = "30px";
+        header.color = "lightgray"        
+
+        parent.addControl(header);    
+    }
+
+    colorConfig.blendig_modes.forEach((element:[string,number, boolean]) => {
+        addRadio(element, panel)
+    });
     
+
     return panel
 }
 
