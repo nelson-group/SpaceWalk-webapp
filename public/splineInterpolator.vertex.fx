@@ -11,6 +11,7 @@ attribute vec4 color;
 
 uniform mat4 worldViewProjection;
 uniform float t;
+uniform float point_size;
 
 varying vec2 vdensityVary;
 void main()
@@ -25,6 +26,7 @@ void main()
     
     gl_Position = worldViewProjection * vec4(positionNew, 1.0);  
     vdensityVary = densities;
-    gl_PointSize = 20.;
+    gl_PointSize = point_size;
+    // test = projection * vec4(positionNew, 1.0);
 }  
 

@@ -129,7 +129,44 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         timeConfig.current_snapnum = actual_snapnum
         timeConfig.t = 0
     });
-    panel.addControl(snapnum_slider);   
+    panel.addControl(snapnum_slider); 
+    
+    let kernel_text = new TextBlock("kernel");
+    kernel_text.text = "Kernel scale: " + 12;
+    kernel_text.height = "30px";
+    kernel_text.color = "lightgray";
+    panel.addControl(kernel_text);
+    var kernel_slider = new Slider();
+    kernel_slider.minimum = 1;
+    kernel_slider.maximum = 40;
+    kernel_slider.value = 12;
+    kernel_slider.height = "20px";
+    kernel_slider.width = "200px";
+    kernel_slider.step = 0.5;
+    kernel_slider.onValueChangedObservable.add(function(value) {            
+        currentMaterial.setFloat("kernel_scale", value);
+        kernel_text.text = "Kernel scale: " + value.toFixed(2);
+    });
+    panel.addControl(kernel_slider);  
+
+    let point_text = new TextBlock("point");
+    point_text.text = "Point size: " + 12;
+    point_text.height = "30px";
+    point_text.color = "lightgray";
+    panel.addControl(point_text);
+    var point_slider = new Slider();
+    point_slider.minimum = 1;
+    point_slider.maximum = 70;
+    point_slider.value = 12;
+    point_slider.height = "20px";
+    point_slider.width = "200px";
+    point_slider.step = 0.5;
+    point_slider.onValueChangedObservable.add(function(value) {            
+        currentMaterial.setFloat("point_size", value);
+        point_text.text = "Point size: " + value.toFixed(2);
+    });
+    panel.addControl(point_slider);  
+
     let interpolation_text = new TextBlock("InterpolationText");
     interpolation_text.text = "Interpolation: " + timeConfig.t;
     interpolation_text.height = "30px";    
@@ -217,7 +254,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     textblock.height = "30px";
     textblock.text = "Blending Modes:"    
     textblock.color = "lightgray";
-    panel.addControl(textblock);   
+    panel.addControl(textblock);         
 
     var addRadio = function(text:[string, number, boolean], parent:StackPanel) {
 
@@ -244,6 +281,9 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         addRadio(element, panel)
     });
     
+
+
+
 
     return panel
 }

@@ -136,12 +136,14 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
     // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
     var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
         attributes: ["position", "densities", "splinesA", "splinesB", "splinesC"],
-        uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density", "t"]                
+        uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);
     shaderMaterial.setFloat("min_density", colorConfig.quantiles[colorConfig.start_quantile]);
     shaderMaterial.setFloat("max_density", colorConfig.quantiles[colorConfig.start_quantile]);
+    shaderMaterial.setFloat("kernel_scale", 12);
+    shaderMaterial.setFloat("point_size", 12);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
     shaderMaterial.alphaMode = colorConfig.blendig_modes[0][1];
