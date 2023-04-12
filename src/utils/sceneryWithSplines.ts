@@ -5,7 +5,7 @@ import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI} from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera } from "@babylonjs/core";
+import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera, Color3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, StackPanel } from "@babylonjs/gui";
 import { DownloadControl } from "..";
 
@@ -112,7 +112,8 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
  {    
     CameraConfig.getInstance().simulationBoxSize = initial_data["BoxSize"]
     var scene = new Scene(engine);
-    scene.createDefaultLight(true);
+    
+    scene.clearColor = (new Color3(0.06,0.06,0.09)).toColor4(1);
     // var pcs = new PointsCloudSystem("pcs",20, scene, { updatable: true }); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
     // pcs.addPoints(500, testFunc);
     // var mesh = await pcs.buildMeshAsync();
@@ -143,8 +144,9 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
     shaderMaterial.setFloat("max_density", colorConfig.max_density);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
-    // mesh.material = shaderMaterial;
+    shaderMaterial.alphaMode = Engine.ALPHA_ADD;
     timeConfig.material = shaderMaterial;
+    
     return shaderMaterial
     }
     

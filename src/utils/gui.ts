@@ -33,6 +33,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     let min_color_text_block = new TextBlock();
     min_color_text_block.text = "Min color:";
     min_color_text_block.height = "30px";
+    min_color_text_block.color = "lightgray";
     panel.addControl(min_color_text_block);     
 
     let min_color_picker = new ColorPicker();
@@ -52,6 +53,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     let max_color_text_block = new TextBlock();
     max_color_text_block.text = "Max color:";
     max_color_text_block.height = "30px";
+    max_color_text_block.color = "lightgray";
     panel.addControl(max_color_text_block);
 
     let max_color_picker = new ColorPicker();
@@ -69,7 +71,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
     let min_opacity_text = new TextBlock();
     min_opacity_text.text = "Min Density: " + roundNumber(colorConfig.min_density);
-    min_opacity_text.height = "30px";
+    min_opacity_text.height = "30px";    
+    min_opacity_text.color = "lightgray";
     panel.addControl(min_opacity_text);
 
     let min_slider = new Slider("min_opacity_slider");
@@ -89,6 +92,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     let max_opacity_text = new TextBlock();
     max_opacity_text.text = "Max Density: " + roundNumber(colorConfig.max_density);
     max_opacity_text.height = "30px";
+    max_opacity_text.color = "lightgray";
     panel.addControl(max_opacity_text);
 
     let max_slider = new Slider("max_opacity_slider");
@@ -108,6 +112,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     let snapnum_text = new TextBlock("snapnumText");
     snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
     snapnum_text.height = "30px";
+    snapnum_text.color = "lightgray";
     panel.addControl(snapnum_text);
     var snapnum_slider = new Slider();
     snapnum_slider.minimum = 0;
@@ -125,7 +130,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     panel.addControl(snapnum_slider);   
     let interpolation_text = new TextBlock("InterpolationText");
     interpolation_text.text = "Interpolation: " + timeConfig.t;
-    interpolation_text.height = "30px";
+    interpolation_text.height = "30px";    
+    interpolation_text.color = "lightgray";
     panel.addControl(interpolation_text);
 
     var interpolate_checkbox = new Checkbox();
@@ -146,11 +152,13 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     let camera_text = new TextBlock("CameraPositionText");
     camera_text.text = "Cameraposition: ";
     camera_text.height = "30px";
+    camera_text.color = "lightgray";
     panel.addControl(camera_text); 
 
     let camera_text_x = new TextBlock("CameraPositionTextX");
     camera_text_x.text = "x: ";
     camera_text_x.height = "30px";
+    camera_text_x.color = "lightgray";
     panel.addControl(camera_text_x); 
     let camera_input_x = new InputText()
     camera_input_x.height = "30px";
@@ -162,6 +170,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     let camera_text_y = new TextBlock("CameraPositionTextY");
     camera_text_y.text = "y: ";
     camera_text_y.height = "30px";
+    camera_text_y.color = "lightgray";
     panel.addControl(camera_text_y); 
     let camera_input_y = new InputText()
     camera_input_y.height = "30px";
@@ -172,7 +181,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
     let camera_text_z = new TextBlock("CameraPositionTextZ");
     camera_text_z.text = "z: ";
-    camera_text_z.height = "30px";    
+    camera_text_z.height = "30px";  
+    camera_text_z.color = "lightgray";
     panel.addControl(camera_text_z); 
 
     let camera_input_z = new InputText()

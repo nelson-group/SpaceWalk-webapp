@@ -13,7 +13,6 @@ uniform mat4 worldViewProjection;
 uniform float t;
 
 varying vec2 vdensityVary;
-
 void main()
 {
     
@@ -26,6 +25,6 @@ void main()
     
     gl_Position = worldViewProjection * vec4(positionNew, 1.0);  
     vdensityVary = densities;
-    gl_PointSize = 2.;
+    gl_PointSize = 20.;
 }  
 
