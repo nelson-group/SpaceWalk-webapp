@@ -224,8 +224,8 @@ async function timeClock()
     if (timeConfig.material)
       (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
     
-    if (timeConfig.slider_object_snapnum && (timeConfig.slider_object_snapnum as Slider).value != timeConfig.current_snapnum)    
-      (timeConfig.slider_object_snapnum as Slider).value = timeConfig.current_snapnum    
+    if (timeConfig.slider_object_snapnum && timeConfig.available_snaps != null && timeConfig.available_snaps[(timeConfig.slider_object_snapnum as Slider).value] != timeConfig.current_snapnum)    
+      (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
     
     if (timeConfig.text_object_interpolation)
       (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation: " + roundNumber(timeConfig.t)
