@@ -79,13 +79,15 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
     let cameraConfig = CameraConfig.getInstance()
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
     cameraConfig.camera = camera;
+    (timeConfig.material as ShaderMaterial).setVector3("camera_pos", camera.position);
     camera.attachControl(canvas, true);
     
     (camera.inputs.attached.keyboard as ArcRotateCameraKeyboardMoveInput).panningSensibility = 1;
 
     camera.onViewMatrixChangedObservable.add(() => 
     {       
-        cameraConfig.updateCameraInfoText(camera.radius, camera.target, camera.position)  
+        cameraConfig.updateCameraInfoText(camera.radius, camera.target, camera.position);
+        (timeConfig.material as ShaderMaterial).setVector3("camera_pos", camera.position);        
         if(cameraConfig.cameraRadius._x != camera.radius)
         {
             cameraConfig.cameraRadius = new Vector3(camera.radius, camera.radius,camera.radius);
@@ -136,14 +138,15 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
     // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
     var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
         attributes: ["position", "densities", "splinesA", "splinesB", "splinesC"],
-        uniforms: ["worldViewProjection", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
+        uniforms: ["worldViewProjection","scale", "camera_pos", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
-    shaderMaterial.setColor3("max_color", colorConfig.max_color);
+    shaderMaterial.setColor3("max_color", colorConfig.max_color);        
     shaderMaterial.setFloat("min_density", colorConfig.quantiles[colorConfig.start_quantile]);
     shaderMaterial.setFloat("max_density", colorConfig.quantiles[colorConfig.start_quantile]);
     shaderMaterial.setFloat("kernel_scale", 12);
     shaderMaterial.setFloat("point_size", 12);
+    shaderMaterial.setFloat("scale", 100);
     shaderMaterial.backFaceCulling = false;            
     shaderMaterial.pointsCloud = true;
     shaderMaterial.alphaMode = colorConfig.blendig_modes[0][1];

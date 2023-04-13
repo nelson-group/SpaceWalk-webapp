@@ -22,7 +22,7 @@ void main() {
    vec4 newColor = vec4(color, opacity * alphaCoef);
    gl_FragColor += min(newColor, 1.) ;   
    
-   // gl_FragColor = vec4(test.x, test.y, test.z, 1);
+   // gl_FragColor = vec4(test,test,test, test);
 }
 
 

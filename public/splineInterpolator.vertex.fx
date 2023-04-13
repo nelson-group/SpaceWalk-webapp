@@ -12,8 +12,13 @@ attribute vec4 color;
 uniform mat4 worldViewProjection;
 uniform float t;
 uniform float point_size;
+uniform vec3 camera_pos;
+uniform float scale;
+// uniform float scale;
 
 varying vec2 vdensityVary;
+#define scale_coef 0.02
+
 void main()
 {
     
@@ -26,7 +31,8 @@ void main()
     
     gl_Position = worldViewProjection * vec4(positionNew, 1.0);  
     vdensityVary = densities;
-    gl_PointSize = point_size;
-    // test = projection * vec4(positionNew, 1.0);
+    
+    
+    gl_PointSize = point_size + 1. / (scale_coef * length(position - camera_pos) + 1.) * scale;
 }  
 

@@ -167,6 +167,24 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     });
     panel.addControl(point_slider);  
 
+    let scale_text = new TextBlock("scale");
+    scale_text.text = "Point scale size: " + 100;
+    scale_text.height = "30px";
+    scale_text.color = "lightgray";
+    panel.addControl(scale_text);
+    var scale_slider = new Slider();
+    scale_slider.minimum = 0;
+    scale_slider.maximum = 1000;
+    scale_slider.value = 100;
+    scale_slider.height = "20px";
+    scale_slider.width = "200px";
+    scale_slider.step = 10;
+    scale_slider.onValueChangedObservable.add(function(value) {            
+        currentMaterial.setFloat("scale", value);
+        scale_text.text = "Point scale Size: " + value
+    });
+    panel.addControl(scale_slider);  
+
     let interpolation_text = new TextBlock("InterpolationText");
     interpolation_text.text = "Interpolation: " + timeConfig.t;
     interpolation_text.height = "30px";    
