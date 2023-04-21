@@ -99,7 +99,7 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
 
         let viewboxMin = camera.target.subtract(cameraConfig.cameraRadius)
         let viewboxMax = camera.target.add(cameraConfig.cameraRadius)
-        if (boxIntersect(viewboxMin, viewboxMax, cameraConfig.viewboxMin, cameraConfig.viewboxMax) / cameraConfig.viewboxVolume < 0.75)
+        if (boxIntersect(viewboxMin, viewboxMax, cameraConfig.viewboxMin, cameraConfig.viewboxMax) / cameraConfig.viewboxVolume < 0.95)
         {
             cameraConfig.viewboxMin = viewboxMin
             cameraConfig.viewboxMax = viewboxMax
@@ -137,7 +137,7 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
 function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:Record<string,any>):ShaderMaterial{
     // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
     var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
-        attributes: ["position", "densities", "splinesA", "splinesB", "splinesC"],
+        attributes: ["position", "densities", "voronoi", "splinesA", "splinesB", "splinesC"],
         uniforms: ["worldViewProjection","scale", "camera_pos", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);

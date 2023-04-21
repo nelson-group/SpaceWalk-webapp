@@ -110,26 +110,6 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         currentMaterial.setFloat("max_density", density); 
     });
     panel.addControl(max_slider);
-
-    let snapnum_text = new TextBlock("snapnumText");
-    snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
-    snapnum_text.height = "30px";
-    snapnum_text.color = "lightgray";
-    panel.addControl(snapnum_text);
-    var snapnum_slider = new Slider();
-    snapnum_slider.minimum = 0;
-    snapnum_slider.maximum = timeConfig.n_available_snaps - 1;
-    snapnum_slider.value = 0;
-    snapnum_slider.height = "20px";
-    snapnum_slider.width = "200px";
-    snapnum_slider.step = 1;
-    snapnum_slider.onValueChangedObservable.add(function(value) {   
-        let actual_snapnum = timeConfig.available_snaps[value]     
-        snapnum_text.text = "Snapnum: " + actual_snapnum;
-        timeConfig.current_snapnum = actual_snapnum
-        timeConfig.t = 0
-    });
-    panel.addControl(snapnum_slider); 
     
     let kernel_text = new TextBlock("kernel");
     kernel_text.text = "Kernel scale: " + 12;
@@ -150,7 +130,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     panel.addControl(kernel_slider);  
 
     let point_text = new TextBlock("point");
-    point_text.text = "Point size: " + 12;
+    point_text.text = "Voronoi size scale: " + 12;
     point_text.height = "30px";
     point_text.color = "lightgray";
     panel.addControl(point_text);
@@ -163,12 +143,12 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     point_slider.step = 0.5;
     point_slider.onValueChangedObservable.add(function(value) {            
         currentMaterial.setFloat("point_size", value);
-        point_text.text = "Point size: " + value.toFixed(2);
+        point_text.text = "Voronoi size scale: " + value.toFixed(2);
     });
     panel.addControl(point_slider);  
 
     let scale_text = new TextBlock("scale");
-    scale_text.text = "Point scale size: " + 100;
+    scale_text.text = "Distance scale: " + 100;
     scale_text.height = "30px";
     scale_text.color = "lightgray";
     panel.addControl(scale_text);
@@ -181,9 +161,29 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     scale_slider.step = 10;
     scale_slider.onValueChangedObservable.add(function(value) {            
         currentMaterial.setFloat("scale", value);
-        scale_text.text = "Point scale Size: " + value
+        scale_text.text = "Distance scale: " + value
     });
-    panel.addControl(scale_slider);  
+    panel.addControl(scale_slider); 
+
+    let snapnum_text = new TextBlock("snapnumText");
+    snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
+    snapnum_text.height = "30px";
+    snapnum_text.color = "lightgray";
+    panel.addControl(snapnum_text);
+    var snapnum_slider = new Slider();
+    snapnum_slider.minimum = 0;
+    snapnum_slider.maximum = timeConfig.n_available_snaps - 1;
+    snapnum_slider.value = 0;
+    snapnum_slider.height = "20px";
+    snapnum_slider.width = "200px";
+    snapnum_slider.step = 1;
+    snapnum_slider.onValueChangedObservable.add(function(value) {   
+        let actual_snapnum = timeConfig.available_snaps[value]     
+        snapnum_text.text = "Snapnum: " + actual_snapnum;
+        timeConfig.current_snapnum = actual_snapnum
+        timeConfig.t = 0
+    });
+    panel.addControl(snapnum_slider);  
 
     let interpolation_text = new TextBlock("InterpolationText");
     interpolation_text.text = "Interpolation: " + timeConfig.t;

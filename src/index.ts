@@ -247,28 +247,25 @@ function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record
     colorConfig.start_quantile = ceil(colorConfig.n_quantiles / 2)
 }
 
-
-let global_splines_d: Array<any>
-
-function placeholderForShader(particle:CloudPoint, i: number, _s: number){ 
-    particle.position = new Vector3(global_splines_d[i * 3], global_splines_d[i * 3 + 1], global_splines_d[i * 3 + 2])
-}
-
 async function updateMesh(data: Record<string,any>, material: ShaderMaterial, scene:Scene) {         
-  global_splines_d = data.splines_d;  
-    let pcsName = "pcs" + timeConfig.current_snapnum + call++;
-    let pcs2 = new PointsCloudSystem(pcsName, 20, scene);
-    DownloadControl.addPcsToDict(pcs2, data.snapnum);
-    pcs2.addPoints(data.nParticles, placeholderForShader);  
-    var pcsMesh = await pcs2.buildMeshAsync(material);
-    pcsMesh.hasVertexAlpha = true;          
-    pcsMesh.setVerticesData("densities", data.densities as FloatArray, false, 2);   
-    pcsMesh.setVerticesData("splinesA", data.splines_a as FloatArray, false, 3);
-    pcsMesh.setVerticesData("splinesB", data.splines_b as FloatArray, false, 3);
-    pcsMesh.setVerticesData("splinesC", data.splines_c as FloatArray, false, 3);      
-    if (timeConfig.current_snapnum != data.snapnum)
-      pcsMesh.visibility = 0;
-    console.log(call)    
+  let pcsName = "pcs" + timeConfig.current_snapnum + call++;
+  let pcs2 = new PointsCloudSystem(pcsName, 20, scene);
+  DownloadControl.addPcsToDict(pcs2, data.snapnum);
+  function placeholderForShader(particle:CloudPoint, i: number, _s: number){ 
+    particle.position = new Vector3(data.splines_d[i * 3], data.splines_d[i * 3 + 1], data.splines_d[i * 3 + 2])
+  } 
+  pcs2.addPoints(data.nParticles, placeholderForShader); 
+
+  var pcsMesh = await pcs2.buildMeshAsync(material);
+  pcsMesh.hasVertexAlpha = true;          
+  pcsMesh.setVerticesData("densities", data.densities as FloatArray, false, 2);      
+  pcsMesh.setVerticesData("voronoi", data.voronoi_diameter_extended as FloatArray, false, 1);   
+  pcsMesh.setVerticesData("splinesA", data.splines_a as FloatArray, false, 3);
+  pcsMesh.setVerticesData("splinesB", data.splines_b as FloatArray, false, 3);
+  pcsMesh.setVerticesData("splinesC", data.splines_c as FloatArray, false, 3);      
+  if (timeConfig.current_snapnum != data.snapnum)
+    pcsMesh.visibility = 0;
+  console.log(call)    
 }
 
 function updateMetaDataOnClient(data: Record<string,any>, current_snapnum: number) {

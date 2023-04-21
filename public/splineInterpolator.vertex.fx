@@ -3,6 +3,7 @@ precision highp float;
 // glEnable(GL_PROGRAM_POINT_SIZE);  
 attribute vec3 position;
 attribute vec2 densities;
+attribute float voronoi;
 attribute vec3 splinesA;
 attribute vec3 splinesB;
 attribute vec3 splinesC;
@@ -32,7 +33,7 @@ void main()
     gl_Position = worldViewProjection * vec4(positionNew, 1.0);  
     vdensityVary = densities;
     
-    
-    gl_PointSize = point_size + 1. / (scale_coef * length(position - camera_pos) + 1.) * scale;
+        
+    gl_PointSize = (point_size * voronoi) + 1. / (scale_coef * length(position - camera_pos) + 1.) * scale;
 }  
 
