@@ -136,7 +136,7 @@ export class DownloadControl{
 
 let call = 0;
 
-const url = "http://127.0.0.1:8000/v1/";
+const url = "http://127.0.0.1:9999/v1/";
 let simulationName = "TNG50-4"
 
 
@@ -149,9 +149,6 @@ async function main() {
     
     const response = await fetch(url + "get/init/" + simulationName + "/" + timeConfig.current_snapnum, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'                  
-      },
     })
     const initial_data = await response.json()
     updateTimeConfig(initial_data);
