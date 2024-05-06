@@ -10,9 +10,16 @@ export function drawOutline(allCoords: Array<Array<number>>, scene: Scene, log: 
 
     var centerOfBox = subtract(maxCoords, divide(boxSize, 2));
 
+    // @ts-ignore
+    var width:number = boxSize[0];
+    // @ts-ignore
+    var height:number = boxSize[1];
+    // @ts-ignore
+    var depth:number = boxSize[2];
+
     var box = MeshBuilder.CreateBox(
         "outline",
-        { width: boxSize[0], height: boxSize[1], depth: boxSize[2] },
+        { width: width, height: height, depth: depth },
         scene
     );
 
@@ -22,9 +29,13 @@ export function drawOutline(allCoords: Array<Array<number>>, scene: Scene, log: 
     boxMaterial.emissiveColor = Color3.Black().scale(0.5);
     box.material = boxMaterial;
 
+    // @ts-ignore
     box.position.x = centerOfBox[0];
+    // @ts-ignore
     box.position.y = centerOfBox[1];
+    // @ts-ignore
     box.position.z = centerOfBox[2];
+
     if (log) {
         console.log([minCoords, maxCoords]);
         console.log([boxSize]);
