@@ -115,7 +115,7 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
     CameraConfig.getInstance().simulationBoxSize = initial_data["BoxSize"]
     var scene = new Scene(engine);
     
-    scene.clearColor = (new Color3(0.06,0.06,0.09)).toColor4(1);
+    scene.clearColor = (new Color3(0.06,0.06,0.09)).toColor4(1); // background color
     // var pcs = new PointsCloudSystem("pcs",20, scene, { updatable: true }); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
     // pcs.addPoints(500, testFunc);
     // var mesh = await pcs.buildMeshAsync();
@@ -142,8 +142,8 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);        
-    shaderMaterial.setFloat("min_density", colorConfig.quantiles[colorConfig.start_quantile]);
-    shaderMaterial.setFloat("max_density", colorConfig.quantiles[colorConfig.start_quantile]);
+    shaderMaterial.setFloat("min_density", colorConfig.quantiles[colorConfig.start_quantile-10]);
+    shaderMaterial.setFloat("max_density", colorConfig.quantiles[colorConfig.start_quantile+10]);
     shaderMaterial.setFloat("kernel_scale", 12);
     shaderMaterial.setFloat("point_size", 12);
     shaderMaterial.setFloat("scale", 100);
