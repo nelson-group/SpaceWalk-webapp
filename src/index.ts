@@ -82,16 +82,17 @@ export class DownloadControl{
         if (element.mesh)
           element.mesh.visibility = 0;
       });
-
-    timeConfig.t = 0;
+      
     this.timeConfig.is_active = old_interpolation_state;
+    timeConfig.t = 0;
+    if (timeConfig.material)
+      (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
+    
     if(this.pcsDictonary[newSnapnum])
       this.pcsDictonary[newSnapnum].forEach(element => {
         if (element.mesh)
           element.mesh.visibility = 1;
-      });
-
-      
+      });      
   }
 
   public static set internalSnapnum(newSnapNnum: number) {  
