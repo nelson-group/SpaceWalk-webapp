@@ -6,7 +6,7 @@ import {StackPanel, Slider, TextBlock} from "@babylonjs/gui"
 import { roundNumber } from "./utils/gui";
 
 var timeConfig = {
-    "current_snapnum": 75,
+    "current_snapnum": 80,
     "min_snapnum": 0,
     "max_snapnum": 98,
     "n_available_snaps": 0,
@@ -22,8 +22,8 @@ var timeConfig = {
 } 
 
 var colorConfig = {
-  "min_color": new Color3(0, 0, 0),
-  "max_color": new Color3(1,0, 0),
+  "min_color": new Color3(1, 0, 0),
+  "max_color": new Color3(1,1, 0),
   "min_density": 0,
   "max_density": 1e-12,
   "automatic_opacity": false,
@@ -72,7 +72,7 @@ export class DownloadControl{
     return this._internalSnapnum;
   }
 
-  private static async updatePcsVisibility(oldSnapnum:number, newSnapnum:number)
+  private static updatePcsVisibility(oldSnapnum:number, newSnapnum:number)
   { 
     let old_interpolation_state = this.timeConfig.is_active;
     this.timeConfig.is_active = false;
@@ -84,13 +84,14 @@ export class DownloadControl{
       });
 
     timeConfig.t = 0;
+    this.timeConfig.is_active = old_interpolation_state;
     if(this.pcsDictonary[newSnapnum])
       this.pcsDictonary[newSnapnum].forEach(element => {
         if (element.mesh)
           element.mesh.visibility = 1;
       });
 
-      this.timeConfig.is_active = old_interpolation_state;
+      
   }
 
   public static set internalSnapnum(newSnapNnum: number) {  
@@ -136,7 +137,7 @@ export class DownloadControl{
 
 let call = 0;
 
-const url = "http://127.0.0.1:9999/v1/";
+const url = "http://94.16.31.82:9999/v1/";
 let simulationName = "TNG50-4"
 
 

@@ -29,7 +29,7 @@ export class CameraConfig {
     public camera: Nullable<ArcRotateCamera>
 
     private constructor() {
-        this.viewboxCenter = new Vector3(7218.33, 24516.7, 21434.0);
+        this.viewboxCenter = new Vector3(4418.633198653534, 22094.21741225524, 16017.983243107832); // new Vector3(7218.33, 24516.7, 21434.0);
         this.cameraRadius = new Vector3(200,200,200);
         this.viewboxVolume = this.cameraRadius._x * this.cameraRadius._y * this.cameraRadius._z * 8 // * 8 kommt, weil es nur der Radius ist, der Durchmesser jedoch benötigt wird und man eigentlich x, y und z noch mal 2 machen müsste woraus sich * 2 * 2 * 2 ergibt ==> * 8
         this.viewboxMin = this.viewboxCenter.subtract(this.cameraRadius)
