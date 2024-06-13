@@ -155,13 +155,14 @@ async function main() {
     const initial_data = await response.json()
     updateTimeConfig(initial_data);
 
-    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });        
+    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });            
     
     colorConfigUpdate(initial_data, colorConfig);
     var [scene, material] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
-    scene.fogMode = Scene.FOGMODE_LINEAR;
-    scene.fogStart = 0.0;
-    scene.fogEnd = 60.0;
+    // fog might not needed for own shader with depth
+    // scene.fogMode = Scene.FOGMODE_LINEAR; // fog usage for own shader: https://doc.babylonjs.com/features/featuresDeepDive/materials/shaders/Fog+ShaderMat
+    // scene.fogStart = 0.0;
+    // scene.fogEnd = 60.0;
 
     window.addEventListener('resize', function () {
         engine.resize();

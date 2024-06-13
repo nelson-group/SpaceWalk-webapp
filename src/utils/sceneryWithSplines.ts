@@ -5,7 +5,7 @@ import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI} from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera, Color3 } from "@babylonjs/core";
+import { Scene, Matrix, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera, Color3, Material } from "@babylonjs/core";
 import { AdvancedDynamicTexture, StackPanel } from "@babylonjs/gui";
 import { DownloadControl } from "..";
 
@@ -78,7 +78,7 @@ function boxIntersect(minBox: Vector3, maxBox: Vector3, minCamera: Vector3, maxC
 function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<string,any>) {
     let cameraConfig = CameraConfig.getInstance()
     var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
-    cameraConfig.camera = camera;
+    cameraConfig.camera = camera;    
     (timeConfig.material as ShaderMaterial).setVector3("camera_pos", camera.position);
     camera.attachControl(canvas, true);
     
@@ -105,8 +105,11 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
             cameraConfig.viewboxMax = viewboxMax
             cameraConfig.viewboxCenter = camera.target 
             DownloadControl.finishedDownload = false                
-        }                                
-        
+        }   
+        let distanceCamera2target = (camera.position.subtract(camera.target)).length(); 
+        let maxViewOfCamera = distanceCamera2target * 3 //empirical value
+        camera.maxZ = maxViewOfCamera; 
+        (timeConfig.material as ShaderMaterial).setFloat("farPlane",maxViewOfCamera-0.5); //must be a bit smaller than maxViewOfCamera such that the points beginn with color 0.        
     });     
 }
 
@@ -118,7 +121,7 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
     scene.clearColor = (new Color3(0.06,0.06,0.09)).toColor4(1); // background color
     // var pcs = new PointsCloudSystem("pcs",20, scene, { updatable: true }); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
     // pcs.addPoints(500, testFunc);
-    // var mesh = await pcs.buildMeshAsync();
+    // var mesh = await pcs.buildMeshAsync();    
     let material = createMaterial(scene, colorConfig, timeConfig)    
 
     var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
@@ -138,7 +141,7 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
     // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
     var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
         attributes: ["position", "densities", "voronoi", "splinesA", "splinesB", "splinesC"],
-        uniforms: ["worldViewProjection","scale", "camera_pos", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
+        uniforms: ["farPlane","worldViewProjection","projection","view", "world","scale", "camera_pos", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);        
@@ -147,9 +150,12 @@ function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:
     shaderMaterial.setFloat("kernel_scale", 12);
     shaderMaterial.setFloat("point_size", 12);
     shaderMaterial.setFloat("scale", 100);
-    shaderMaterial.backFaceCulling = false;            
+    shaderMaterial.setFloat("farPlane", 200*3); // just any initial value because gets updated from camera change
+    shaderMaterial.backFaceCulling = false;   
     shaderMaterial.pointsCloud = true;
-    shaderMaterial.alphaMode = colorConfig.blendig_modes[0][1];
+    shaderMaterial.forceDepthWrite = true;
+    // (shaderMaterial as Material).useLogarithmicDepth = true;
+    shaderMaterial.alphaMode = colorConfig.blendig_modes[1][1];
     timeConfig.material = shaderMaterial;
     
     return shaderMaterial
