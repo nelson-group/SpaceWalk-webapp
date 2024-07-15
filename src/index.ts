@@ -1,6 +1,6 @@
 import { createScene, CameraConfig } from "./utils/sceneryWithSplines";  
 
-import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray, Material } from "@babylonjs/core";
+import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray, Material, DepthRenderer } from "@babylonjs/core";
 import { ceil, max, min, number } from "mathjs";
 import {StackPanel, Slider, TextBlock} from "@babylonjs/gui"
 import { roundNumber } from "./utils/gui";
@@ -86,7 +86,10 @@ export class DownloadControl{
     this.timeConfig.is_active = old_interpolation_state;
     timeConfig.t = 0;
     if (timeConfig.material)
-      (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
+      {
+      (timeConfig.material[0] as ShaderMaterial).setFloat("t", timeConfig.t);
+      (timeConfig.material[1] as ShaderMaterial).setFloat("t", timeConfig.t);
+      }
     
     if(this.pcsDictonary[newSnapnum])
       this.pcsDictonary[newSnapnum].forEach(element => {
@@ -158,7 +161,7 @@ async function main() {
     var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });            
     
     colorConfigUpdate(initial_data, colorConfig);
-    var [scene, material] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
+    var [scene, material, renderer] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
     // fog might not needed for own shader with depth
     // scene.fogMode = Scene.FOGMODE_LINEAR; // fog usage for own shader: https://doc.babylonjs.com/features/featuresDeepDive/materials/shaders/Fog+ShaderMat
     // scene.fogStart = 0.0;
@@ -203,7 +206,7 @@ async function main() {
                     DownloadControl.downloadInProcess = false
                     return
                 }
-                  updateMesh(data, material, scene)                  
+                  updateMesh(data, material, scene, renderer)                  
                   updateMetaDataOnClient(data, data.snapnum);                  
                   DownloadControl.downloadInProcess = false;
                 })
@@ -247,7 +250,7 @@ function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record
     colorConfig.start_quantile = ceil(colorConfig.n_quantiles / 2)
 }
 
-async function updateMesh(data: Record<string,any>, material: ShaderMaterial, scene:Scene) {         
+async function updateMesh(data: Record<string, any>, material: ShaderMaterial[], scene: Scene, renderer: DepthRenderer) {         
   let pcsName = "pcs" + timeConfig.current_snapnum + call++;
   let pcs2 = new PointsCloudSystem(pcsName, 20, scene);
   DownloadControl.addPcsToDict(pcs2, data.snapnum);
@@ -256,8 +259,8 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
   } 
   pcs2.addPoints(data.nParticles, placeholderForShader); 
 
-  var pcsMesh = await pcs2.buildMeshAsync(material);
-  pcsMesh.hasVertexAlpha = true;          
+  var pcsMesh = await pcs2.buildMeshAsync(material[0]);
+  // pcsMesh.hasVertexAlpha = true;          
   pcsMesh.setVerticesData("densities", data.densities as FloatArray, false, 2);      
   pcsMesh.setVerticesData("voronoi", data.voronoi_diameter_extended as FloatArray, false, 1);   
   pcsMesh.setVerticesData("splinesA", data.splines_a as FloatArray, false, 3);
@@ -266,6 +269,9 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
   if (timeConfig.current_snapnum != data.snapnum)
     pcsMesh.visibility = 0;
   console.log(call)    
+  
+  // let renderer = scene._depthRenderer[scene.cameras[0].id]; //must be the viewCamera
+  renderer.setMaterialForRendering(pcsMesh, material[1]);
 }
 
 function updateMetaDataOnClient(data: Record<string,any>, current_snapnum: number) {

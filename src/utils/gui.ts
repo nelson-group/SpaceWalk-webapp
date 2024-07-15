@@ -24,7 +24,7 @@ export function calcColor(config: Record<string,any>, density: number) {
     return color4;
 }
 
-export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial, colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig) {
+export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial[], colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig) {
     let panel = new StackPanel();
     panel.width = "400px";
     panel.isVertical = true;
@@ -47,7 +47,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     min_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     min_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
         colorConfig.min_color.copyFrom(value);
-        currentMaterial.setColor3("min_color", colorConfig.min_color);
+        currentMaterial[0].setColor3("min_color", colorConfig.min_color);
     });
 
     panel.addControl(min_color_picker);
@@ -67,7 +67,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     max_color_picker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     max_color_picker.onValueChangedObservable.add(function(value) { // value is a color3
         colorConfig.max_color.copyFrom(value);      
-        currentMaterial.setColor3("max_color", colorConfig.max_color);
+        currentMaterial[0].setColor3("max_color", colorConfig.max_color);
     });
     panel.addControl(max_color_picker);
 
@@ -87,7 +87,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     min_slider.onValueChangedObservable.add(function(value) {
         let density = colorConfig.quantiles[value]
         min_opacity_text.text = "Min Density: " + density.toFixed(12);        
-        currentMaterial.setFloat("min_density", density); 
+        currentMaterial[0].setFloat("min_density", density); 
     });
     panel.addControl(min_slider);
 
@@ -107,25 +107,26 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     max_slider.onValueChangedObservable.add(function(value) {
         let density = colorConfig.quantiles[value]
         max_opacity_text.text = "Max Density: " + density.toFixed(12);        
-        currentMaterial.setFloat("max_density", density); 
+        currentMaterial[0].setFloat("max_density", density); 
     });
     panel.addControl(max_slider);
     
     let kernel_text = new TextBlock("kernel");
-    kernel_text.text = "Kernel scale: " + 12;
+    kernel_text.text = "Kernel scale: " + 0.5.toFixed(2) +" (percentage)";
     kernel_text.height = "30px";
     kernel_text.color = "lightgray";
     panel.addControl(kernel_text);
     var kernel_slider = new Slider();
-    kernel_slider.minimum = 1;
-    kernel_slider.maximum = 40;
-    kernel_slider.value = 12;
+    kernel_slider.minimum = 0;
+    kernel_slider.maximum = 1;
+    kernel_slider.value = 0.5;
     kernel_slider.height = "20px";
     kernel_slider.width = "200px";
-    kernel_slider.step = 0.5;
+    kernel_slider.step = 0.05;
     kernel_slider.onValueChangedObservable.add(function(value) {            
-        currentMaterial.setFloat("kernel_scale", value);
-        kernel_text.text = "Kernel scale: " + value.toFixed(2);
+        currentMaterial[0].setFloat("kernel_scale", value);
+        currentMaterial[1].setFloat("kernel_scale", value);
+        kernel_text.text = "Kernel scale: " + value.toFixed(2) +" (percentage)";
     });
     panel.addControl(kernel_slider);  
 
@@ -142,25 +143,27 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     point_slider.width = "200px";
     point_slider.step = 0.5;
     point_slider.onValueChangedObservable.add(function(value) {            
-        currentMaterial.setFloat("point_size", value);
+        currentMaterial[0].setFloat("point_size", value);
+        currentMaterial[1].setFloat("point_size", value);
         point_text.text = "Voronoi size scale: " + value.toFixed(2);
     });
     panel.addControl(point_slider);  
 
     let scale_text = new TextBlock("scale");
-    scale_text.text = "Distance scale: " + 100;
+    scale_text.text = "Distance scale: " + 1;
     scale_text.height = "30px";
     scale_text.color = "lightgray";
     panel.addControl(scale_text);
     var scale_slider = new Slider();
     scale_slider.minimum = 0;
-    scale_slider.maximum = 1000;
-    scale_slider.value = 100;
+    scale_slider.maximum = 10;
+    scale_slider.value = 1;
     scale_slider.height = "20px";
     scale_slider.width = "200px";
-    scale_slider.step = 10;
+    scale_slider.step = 0.5;
     scale_slider.onValueChangedObservable.add(function(value) {            
-        currentMaterial.setFloat("scale", value);
+        currentMaterial[0].setFloat("scale", value);
+        currentMaterial[1].setFloat("scale", value);
         scale_text.text = "Distance scale: " + value
     });
     panel.addControl(scale_slider); 
