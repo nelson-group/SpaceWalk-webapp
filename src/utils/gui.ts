@@ -288,7 +288,10 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
         button.onIsCheckedChangedObservable.add(function(state){
             if(state)
-                timeConfig.material.alphaMode = text[1]
+                {
+                timeConfig.material[0].alphaMode = text[1];
+                timeConfig.material[1].alphaMode = text[1];
+                }
         })
 
         var header = Control.AddHeader(button, text[0], "200px", { isHorizontal: true, controlFirst: true });

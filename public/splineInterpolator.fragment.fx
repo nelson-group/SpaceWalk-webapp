@@ -6,9 +6,11 @@ uniform vec3 max_color;
 uniform float min_density; //all normalized in client
 uniform float max_density; //all normalized in client
 uniform float kernel_scale;
+uniform float farPlane;
 
 varying vec2 vdensityVary;
 varying float vDepth;
+varying float vSphereRadius;
 
 #define PI radians(180.0)
 #define maxKernel dot(vec2(1.,1.), vec2(1.,1.))
@@ -27,8 +29,10 @@ void main() {
    float one_minus_d = 1. - vdensity; // normalization done by gpu
    vec3 color = min_color * one_minus_d + max_color * vdensity;   
 
-   gl_FragDepth = vDepth;
-   gl_FragColor = vec4(color, 1.);    
+   // gl_FragDepth = log2(1. + clamp(vDepth - (1.- r2) * vSphereRadius / farPlane, 0.001,0.999));
+   gl_FragColor = vec4(color, (1. - r2) * 0.1);    
+   // gl_FragColor = vec4(vec3(vDepth), (1. - r2) * (vdensity / max_density));    
+   // gl_FragColor = vec4(color, 1);    
 }
 
 

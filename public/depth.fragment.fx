@@ -19,11 +19,16 @@ void main() {
    uv.z = sqrt(1.- r2) / vSphereRadius; //actual uv.z from in clipsspace (from 0-1 to 0.0000 because of smallness of particles
    
    
-   float clipSpaceDepthNormalized = clamp(vDepth + uv.z, 0., 1.);
-   float logarithmicFragmentDepth = log2(max(1.0001, 1. + clipSpaceDepthNormalized));      
+   float clipSpaceDepthNormalized = clamp(vDepth + uv.z, 0.0001, 0.999);
+   // float clipSpaceDepthNormalized = clamp(vDepth, 0.0001, 0.999);
 
-   gl_FragDepth = logarithmicFragmentDepth;
-   gl_FragColor = vec4(logarithmicFragmentDepth,0.,0., 1.); 
+   float fragmentDepth = clipSpaceDepthNormalized;
+   #ifdef logDepth
+      fragmentDepth = log2(max(1.0001, 1. + clipSpaceDepthNormalized));      
+   #endif
+
+   // gl_FragDepth = fragmentDepth;
+   gl_FragColor = vec4(fragmentDepth,0.,0., 1.); 
 }
 
 

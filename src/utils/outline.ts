@@ -1,4 +1,4 @@
-import {min, max, divide, subtract} from "mathjs";
+import math, {min, max, divide, subtract} from "mathjs";
 
 import { Scene, StandardMaterial, MeshBuilder, Color3 } from "@babylonjs/core";
 

@@ -1,0 +1,92 @@
+precision highp float;
+
+uniform sampler2D textureSampler;
+uniform sampler2D depthSampler;
+// uniform vec2 textureSize;
+// uniform float radius; //Radius of the blur
+
+// must be done
+// uniform int maxFilterSize;
+uniform vec2 blurDir;
+// uniform float projectedParticleConstant;
+// uniform float depthThreshold;
+varying vec2 vUV;
+
+void main() {       
+    // float depth = texture2D(textureSampler, vUV).x;
+    // if (depth >= 1. || depth <= .06) discard;
+
+    // vec3 finalColor = vec3(0.0);
+    // float radius = 10.;    
+    // float total = 0.0;
+    // for (float dx = -radius; dx <= radius; dx++) {
+    //     for (float dy = -radius; dy <= radius; dy++) {
+    //         vec2 offset = vec2(dx, dy);
+    //         // offset /= radius;
+    //         // float weight = 1. - dot(offset / 10., offset / 10.)/ radius;
+    //         float weight = 0.5;
+    //         finalColor += texture2D(textureSampler, vUV + offset / 1000.).rgb / 100.;
+    //         total += weight;
+    //     }
+    // }
+
+    
+    // gl_FragColor = vec4(finalColor, 1.0);
+    // gl_FragColor = vec4(vec3(depth), 1.0);
+    // vec3 r = texture2D(textureSampler, vUV).xyz;
+    // vec3 r = vec3(texture2D(depthSampler, vUV).x);
+    // vec3 r = texture2D(textureSampler, vUV).xyz * (1.-texture2D(depthSampler, vUV).x);
+    // gl_FragColor = vec4(r, 1.0);
+    // gl_FragColor = vec4(vUV.x,vUV.y,0., 1.0);
+
+    //here properly
+    int maxFilterSize = 100;
+    // vec2 blurDir = vec2(1.,0.);
+    float projectedParticleConstant = 10.;
+    float depthThreshold = 0.1;
+    
+    float depth = textureLod(depthSampler, vUV, 0.).x;
+
+    if (depth >= 1. || depth <= 0.) {
+        discard;        
+        // gl_FragColor = textureLod(textureSampler,vUV,0.);        
+        // return;        
+    }    
+    
+    // int filterSize = min(maxFilterSize, int(ceil(projectedParticleConstant / depth)));
+    int filterSize = maxFilterSize;
+    float orientation = 1000.; //must be a uniform that gives the size n pixel in blurdir
+    float sigma = float(filterSize);
+    float two_sigma2 = 2.0 * sigma * sigma;
+    float sigmaDepth = depthThreshold;
+    float two_sigmaDepth2 = 2.0 * sigmaDepth * sigmaDepth;
+
+    depth = 1. - depth;
+    vec3 sum = vec3(0.);
+    float wsum = 0.;    
+
+    for (int x = -filterSize; x <= filterSize; ++x) {
+        vec2 coords = vec2(x) * blurDir;
+        float sampleDepthVel = 1. - textureLod(depthSampler, vUV + coords / orientation, 0.).r;
+        // if (sampleDepthVel >= 1. || sampleDepthVel <= 0.)
+        //     continue;
+
+        vec3 sampleColor = textureLod(textureSampler, vUV + coords / orientation, 0.).rgb;
+
+        float r = 1. - dot(coords, coords);
+        float w = pow(r,2.);
+
+        float rDepth = (sampleDepthVel - depth);
+        float wd = step(depthThreshold, rDepth);
+
+        sum += sampleDepthVel * w * wd;        
+        wsum += w * wd;
+    }
+
+    glFragColor = vec4(sum / wsum, 1.);
+    // glFragColor = vec4(dot(50.,50.) / 1000.,0., 0., 1.);
+    // glFragColor = vec4(sum.x, wsum, 0., 1.);
+    // glFragColor = vec4(depth, depth, depth, 1.);
+    // glFragColor = textureLod(textureSampler, vUV, 0.);
+    // glFragColor = vec4(textureLod(textureSampler, vUV, 0.).gb,0.,1.);
+}

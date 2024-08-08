@@ -158,7 +158,7 @@ async function main() {
     const initial_data = await response.json()
     updateTimeConfig(initial_data);
 
-    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });            
+    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });                
     
     colorConfigUpdate(initial_data, colorConfig);
     var [scene, material, renderer] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
@@ -232,7 +232,10 @@ async function timeClock()
       timeConfig.current_snapnum += 1
       
     if (timeConfig.material)
-      (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
+      for (let i = 0; i < (timeConfig.material as any[]).length; i++)
+      {
+        (timeConfig.material[i] as ShaderMaterial).setFloat("t", timeConfig.t);
+      }
     
     if (timeConfig.slider_object_snapnum && timeConfig.available_snaps != null && timeConfig.available_snaps[(timeConfig.slider_object_snapnum as Slider).value] != timeConfig.current_snapnum)    
       (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
