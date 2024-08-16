@@ -8,7 +8,7 @@ import {
     double
 } from "@babylonjs/core";
 
-import {RadioButton, Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
+import {Container, ScrollViewer, RadioButton, Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
 
 import { min, max, forEach } from "mathjs";
 import { CameraConfig } from "./sceneryWithSplines";
@@ -25,18 +25,32 @@ export function calcColor(config: Record<string,any>, density: number) {
 }
 
 export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial[], colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig) {
-    let panel = new StackPanel();
-    panel.width = "400px";
-    panel.isVertical = true;
-    panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    gui_texture.addControl(panel);
+    //scrollViewIfControllsAreToLarge: consider optimization: https://doc.babylonjs.com/features/featuresDeepDive/gui/scrollViewer    
+    const myScrollViewer = new ScrollViewer("customer settings");  
+    
+    gui_texture.addControl(myScrollViewer);
+    let parentStackPanel = new StackPanel("customer settings panel");
+    parentStackPanel.width = "400px";
+    parentStackPanel.isVertical = true;
+    parentStackPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    parentStackPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;     
+    myScrollViewer.addControl(parentStackPanel);
 
+    gui_texture.onBeginRenderObservable.addOnce(() => 
+    {
+        gui_texture.moveToNonOverlappedPosition(1,1,1); });
+
+    let allPanels = new Array<StackPanel>;
+
+    // visualization settings //
+    let currentPanel = createStackPanel("Visuzalization Settings", parentStackPanel, allPanels);        
+    
     let min_color_text_block = new TextBlock();
     min_color_text_block.text = "Min color:";
     min_color_text_block.height = "30px";
     min_color_text_block.color = "lightgray";
-    panel.addControl(min_color_text_block);     
+    currentPanel.addControl(min_color_text_block);    
+    
 
     let min_color_picker = new ColorPicker();
     let min_arr: Array<number> = [];
@@ -50,13 +64,13 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         currentMaterial[0].setColor3("min_color", colorConfig.min_color);
     });
 
-    panel.addControl(min_color_picker);
+    currentPanel.addControl(min_color_picker);
 
     let max_color_text_block = new TextBlock();
     max_color_text_block.text = "Max color:";
     max_color_text_block.height = "30px";
     max_color_text_block.color = "lightgray";
-    panel.addControl(max_color_text_block);
+    currentPanel.addControl(max_color_text_block);
 
     let max_color_picker = new ColorPicker();
     let max_arr: Array<number> = [];
@@ -69,13 +83,13 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         colorConfig.max_color.copyFrom(value);      
         currentMaterial[0].setColor3("max_color", colorConfig.max_color);
     });
-    panel.addControl(max_color_picker);
+    currentPanel.addControl(max_color_picker);
 
     let min_opacity_text = new TextBlock();
     min_opacity_text.text = "Min Density: " + colorConfig.quantiles[colorConfig.start_quantile-10].toFixed(11);
     min_opacity_text.height = "30px";    
     min_opacity_text.color = "lightgray";
-    panel.addControl(min_opacity_text);
+    currentPanel.addControl(min_opacity_text);
 
     let min_slider = new Slider("min_opacity_slider");
     min_slider.minimum = 0;
@@ -89,13 +103,13 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         min_opacity_text.text = "Min Density: " + density.toFixed(12);        
         currentMaterial[0].setFloat("min_density", density); 
     });
-    panel.addControl(min_slider);
+    currentPanel.addControl(min_slider);
 
     let max_opacity_text = new TextBlock();
     max_opacity_text.text = "Max Density: " + colorConfig.quantiles[colorConfig.start_quantile+10].toFixed(11);
     max_opacity_text.height = "30px";
     max_opacity_text.color = "lightgray";
-    panel.addControl(max_opacity_text);
+    currentPanel.addControl(max_opacity_text);
 
     let max_slider = new Slider("max_opacity_slider");
     max_slider.minimum = 0;
@@ -109,70 +123,16 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         max_opacity_text.text = "Max Density: " + density.toFixed(12);        
         currentMaterial[0].setFloat("max_density", density); 
     });
-    panel.addControl(max_slider);
-    
-    let kernel_text = new TextBlock("kernel");
-    kernel_text.text = "Kernel scale: " + 0.5.toFixed(2) +" (percentage)";
-    kernel_text.height = "30px";
-    kernel_text.color = "lightgray";
-    panel.addControl(kernel_text);
-    var kernel_slider = new Slider();
-    kernel_slider.minimum = 0;
-    kernel_slider.maximum = 1;
-    kernel_slider.value = 0.5;
-    kernel_slider.height = "20px";
-    kernel_slider.width = "200px";
-    kernel_slider.step = 0.05;
-    kernel_slider.onValueChangedObservable.add(function(value) {            
-        currentMaterial[0].setFloat("kernel_scale", value);
-        currentMaterial[1].setFloat("kernel_scale", value);
-        kernel_text.text = "Kernel scale: " + value.toFixed(2) +" (percentage)";
-    });
-    panel.addControl(kernel_slider);  
+    currentPanel.addControl(max_slider);
 
-    let point_text = new TextBlock("point");
-    point_text.text = "Voronoi size scale: " + 12;
-    point_text.height = "30px";
-    point_text.color = "lightgray";
-    panel.addControl(point_text);
-    var point_slider = new Slider();
-    point_slider.minimum = 1;
-    point_slider.maximum = 70;
-    point_slider.value = 12;
-    point_slider.height = "20px";
-    point_slider.width = "200px";
-    point_slider.step = 0.5;
-    point_slider.onValueChangedObservable.add(function(value) {            
-        currentMaterial[0].setFloat("point_size", value);
-        currentMaterial[1].setFloat("point_size", value);
-        point_text.text = "Voronoi size scale: " + value.toFixed(2);
-    });
-    panel.addControl(point_slider);  
-
-    let scale_text = new TextBlock("scale");
-    scale_text.text = "Distance scale: " + 1;
-    scale_text.height = "30px";
-    scale_text.color = "lightgray";
-    panel.addControl(scale_text);
-    var scale_slider = new Slider();
-    scale_slider.minimum = 0;
-    scale_slider.maximum = 10;
-    scale_slider.value = 1;
-    scale_slider.height = "20px";
-    scale_slider.width = "200px";
-    scale_slider.step = 0.5;
-    scale_slider.onValueChangedObservable.add(function(value) {            
-        currentMaterial[0].setFloat("scale", value);
-        currentMaterial[1].setFloat("scale", value);
-        scale_text.text = "Distance scale: " + value
-    });
-    panel.addControl(scale_slider); 
+    // simulation settings // 
+    currentPanel = createStackPanel("Simulation Settings", parentStackPanel, allPanels);   
 
     let snapnum_text = new TextBlock("snapnumText");
     snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
     snapnum_text.height = "30px";
     snapnum_text.color = "lightgray";
-    panel.addControl(snapnum_text);
+    currentPanel.addControl(snapnum_text);
     var snapnum_slider = new Slider();
     snapnum_slider.minimum = 0;
     snapnum_slider.maximum = timeConfig.n_available_snaps - 1;
@@ -186,13 +146,13 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         timeConfig.current_snapnum = actual_snapnum
         timeConfig.t = 0
     });
-    panel.addControl(snapnum_slider);  
+    currentPanel.addControl(snapnum_slider);  
 
     let interpolation_text = new TextBlock("InterpolationText");
     interpolation_text.text = "Interpolation: " + timeConfig.t;
     interpolation_text.height = "30px";    
     interpolation_text.color = "lightgray";
-    panel.addControl(interpolation_text);
+    currentPanel.addControl(interpolation_text);
 
     var interpolate_checkbox = new Checkbox();
     interpolate_checkbox.width = "20px";
@@ -203,7 +163,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         interpolate_checkbox.color = interpolate_checkbox.isChecked ? "green" : "red";
         timeConfig.is_active = interpolate_checkbox.isChecked;           
     });
-    panel.addControl(interpolate_checkbox); 
+    currentPanel.addControl(interpolate_checkbox); 
 
     timeConfig.text_object_interpolation = interpolation_text;
     timeConfig.text_object_snapnum = snapnum_text;
@@ -213,44 +173,44 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     camera_text.text = "Cameraposition: ";
     camera_text.height = "30px";
     camera_text.color = "lightgray";
-    panel.addControl(camera_text); 
+    currentPanel.addControl(camera_text); 
 
     let camera_text_x = new TextBlock("CameraPositionTextX");
     camera_text_x.text = "x: ";
     camera_text_x.height = "30px";
     camera_text_x.color = "lightgray";
-    panel.addControl(camera_text_x); 
+    currentPanel.addControl(camera_text_x); 
     let camera_input_x = new InputText()
     camera_input_x.height = "30px";
     camera_input_x.width = "80%";
     camera_input_x.color = "white";
     camera_input_x.text = "" + cameraConfig.viewboxCenter.x;
-    panel.addControl(camera_input_x);     
+    currentPanel.addControl(camera_input_x);     
 
     let camera_text_y = new TextBlock("CameraPositionTextY");
     camera_text_y.text = "y: ";
     camera_text_y.height = "30px";
     camera_text_y.color = "lightgray";
-    panel.addControl(camera_text_y); 
+    currentPanel.addControl(camera_text_y); 
     let camera_input_y = new InputText()
     camera_input_y.height = "30px";
     camera_input_y.width = "80%";
     camera_input_y.color = "white"
     camera_input_y.text = "" + cameraConfig.viewboxCenter.y;
-    panel.addControl(camera_input_y);     
+    currentPanel.addControl(camera_input_y);     
 
     let camera_text_z = new TextBlock("CameraPositionTextZ");
     camera_text_z.text = "z: ";
     camera_text_z.height = "30px";  
     camera_text_z.color = "lightgray";
-    panel.addControl(camera_text_z); 
+    currentPanel.addControl(camera_text_z); 
 
     let camera_input_z = new InputText()
     camera_input_z.height = "30px";
     camera_input_z.width = "80%";
     camera_input_z.color = "white"
     camera_input_z.text = "" + cameraConfig.viewboxCenter.z;
-    panel.addControl(camera_input_z);     
+    currentPanel.addControl(camera_input_z);     
 
     const camera_update_button = Button.CreateSimpleButton("camera_update_button", "update camera target");
     camera_update_button.height = "30px";
@@ -269,13 +229,73 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         }
     })
 
-    panel.addControl(camera_update_button); 
+    currentPanel.addControl(camera_update_button); 
+
+    // Rendering Settings //
+    currentPanel = createStackPanel("Rendering Settings", parentStackPanel, allPanels);  
+
+    let kernel_text = new TextBlock("kernel");
+    kernel_text.text = "Kernel scale: " + 0.5.toFixed(2) +" (percentage)";
+    kernel_text.height = "30px";
+    kernel_text.color = "lightgray";
+    currentPanel.addControl(kernel_text);
+    var kernel_slider = new Slider();
+    kernel_slider.minimum = 0;
+    kernel_slider.maximum = 1;
+    kernel_slider.value = 0.5;
+    kernel_slider.height = "20px";
+    kernel_slider.width = "200px";
+    kernel_slider.step = 0.05;
+    kernel_slider.onValueChangedObservable.add(function(value) {            
+        currentMaterial[0].setFloat("kernel_scale", value);
+        currentMaterial[1].setFloat("kernel_scale", value);
+        kernel_text.text = "Kernel scale: " + value.toFixed(2) +" (percentage)";
+    });
+    currentPanel.addControl(kernel_slider);  
+
+    let point_text = new TextBlock("point");
+    point_text.text = "Voronoi size scale: " + 12;
+    point_text.height = "30px";
+    point_text.color = "lightgray";
+    currentPanel.addControl(point_text);
+    var point_slider = new Slider();
+    point_slider.minimum = 1;
+    point_slider.maximum = 70;
+    point_slider.value = 12;
+    point_slider.height = "20px";
+    point_slider.width = "200px";
+    point_slider.step = 0.5;
+    point_slider.onValueChangedObservable.add(function(value) {            
+        currentMaterial[0].setFloat("point_size", value);
+        currentMaterial[1].setFloat("point_size", value);
+        point_text.text = "Voronoi size scale: " + value.toFixed(2);
+    });
+    currentPanel.addControl(point_slider);  
+
+    let scale_text = new TextBlock("scale");
+    scale_text.text = "Distance scale: " + 1;
+    scale_text.height = "30px";
+    scale_text.color = "lightgray";
+    currentPanel.addControl(scale_text);
+    var scale_slider = new Slider();
+    scale_slider.minimum = 0;
+    scale_slider.maximum = 10;
+    scale_slider.value = 1;
+    scale_slider.height = "20px";
+    scale_slider.width = "200px";
+    scale_slider.step = 0.5;
+    scale_slider.onValueChangedObservable.add(function(value) {            
+        currentMaterial[0].setFloat("scale", value);
+        currentMaterial[1].setFloat("scale", value);
+        scale_text.text = "Distance scale: " + value
+    });
+    currentPanel.addControl(scale_slider); 
 
     var textblock = new TextBlock();
     textblock.height = "30px";
     textblock.text = "Blending Modes:"    
     textblock.color = "lightgray";
-    panel.addControl(textblock);         
+    currentPanel.addControl(textblock);         
 
     var addRadio = function(text:[string, number, boolean], parent:StackPanel) {
 
@@ -302,17 +322,25 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     }
 
     colorConfig.blendig_modes.forEach((element:[string,number, boolean]) => {
-        addRadio(element, panel)
+        addRadio(element, currentPanel)
     });
     
-
-
-
-
-    return panel
+    return currentPanel
 }
 
 
 export function roundNumber(number: number) {
     return (Math.round(number * 100) / 100).toFixed(2);
 }
+function createStackPanel(panelName: string, parent:Container, allPanels:Array<StackPanel>):StackPanel {
+    let panel = new StackPanel(panelName);
+    panel.width = "400px";
+    panel.isVertical = true;
+    panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER; 
+    panel.overlapGroup = 1;
+    parent.addControl(panel);
+    allPanels.push(panel);
+    return panel;
+}
+
