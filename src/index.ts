@@ -262,7 +262,7 @@ export async function timeClock()
       (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
     
     if (timeConfig.text_object_interpolation)
-      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation (t): " + roundNumber(timeConfig.t, 3)    
+      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation (t): " + timeConfig.t.toFixed(3)   
 }
 
 function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>) {
