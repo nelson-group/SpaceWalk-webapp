@@ -128,7 +128,9 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel.addControl(max_slider);
 
     // simulation settings // 
-    currentPanel = createStackPanel("Simulation Settings", parentStackPanel, allPanels);   
+    currentPanel = createStackPanel("Simulation Settings", parentStackPanel, allPanels); 
+    let t_slider = new Slider("ips_slider"); // must be known for other parameters  
+    let interpolation_text = new TextBlock("InterpolationText"); // same as above
 
     let snapnum_text = new TextBlock("snapnumText");
     snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
@@ -185,14 +187,28 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     interpolationSteps_slider.onValueChangedObservable.add(function(value) {
         timeConfig.number_of_interpolations =  value;
         interpolationSteps_text.text = "Interpolationsteps: " + value;
+        t_slider.maximum = value;
+        t_slider.value = min(value, t_slider.value) ;
+        interpolation_text.text = "Interpolation (t): " + roundNumber(t_slider.value / t_slider.maximum);
     });
-    currentPanel.addControl(interpolationSteps_slider);    
-
-    let interpolation_text = new TextBlock("InterpolationText");
-    interpolation_text.text = "Interpolation: " + timeConfig.t;
+    currentPanel.addControl(interpolationSteps_slider);  
+        
+    interpolation_text.text = "Interpolation (t): " + roundNumber(timeConfig.t);
     interpolation_text.height = "30px";    
     interpolation_text.color = "lightgray";
-    currentPanel.addControl(interpolation_text);
+    currentPanel.addControl(interpolation_text);    
+    t_slider.minimum = 0;
+    t_slider.maximum = timeConfig.number_of_interpolations;
+    t_slider.step = 2;
+    t_slider.value = 0;
+    t_slider.height = "20px";
+    t_slider.width = "200px";
+    t_slider.onValueChangedObservable.add(function(value) {
+        timeConfig.t = value / t_slider.maximum;
+        interpolation_text.text = "Interpolation (t): " + roundNumber(value / t_slider.maximum, 3);
+    });
+    currentPanel.addControl(t_slider);
+
     var interpolate_checkbox = new Checkbox();
     interpolate_checkbox.width = "20px";
     interpolate_checkbox.height = "20px";
@@ -207,6 +223,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     timeConfig.text_object_interpolation = interpolation_text;
     timeConfig.text_object_snapnum = snapnum_text;
     timeConfig.slider_object_snapnum = snapnum_slider;
+    timeConfig.slider_object_t = t_slider;
 
     let camera_text = new TextBlock("CameraPositionText");
     camera_text.text = "Cameraposition: ";
@@ -368,8 +385,8 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 }
 
 
-export function roundNumber(number: number) {
-    return (Math.round(number * 100) / 100).toFixed(2);
+export function roundNumber(number: number, digits: number = 2) {
+    return (Math.round(number * 100) / 100).toFixed(digits);
 }
 function createStackPanel(panelName: string, parent:Container, allPanels:Array<StackPanel>):StackPanel {
     let panel = new StackPanel(panelName);

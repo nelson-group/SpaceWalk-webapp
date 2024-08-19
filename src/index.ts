@@ -13,6 +13,7 @@ var timeConfig = {
     "available_snaps": null,
     "text_object_snapnum": null,
     "slider_object_snapnum": null,
+    "slider_object_t": null,
     "text_object_interpolation": null,  
     "number_of_interpolations": 200,
     "intervallId": 0,
@@ -231,13 +232,16 @@ export async function timeClock()
     
     timeConfig.t += (1 / timeConfig.number_of_interpolations)
     if (timeConfig.t > 1)            
-      timeConfig.current_snapnum += 1
+      timeConfig.current_snapnum += 1    
       
     if (timeConfig.material)
       for (let i = 0; i < (timeConfig.material as any[]).length; i++)
       {
         (timeConfig.material[i] as ShaderMaterial).setFloat("t", timeConfig.t);
       }
+
+    if (timeConfig.slider_object_t)
+      (timeConfig.slider_object_t as Slider).value = ( timeConfig.t * (timeConfig.slider_object_t as Slider).maximum)
     
     if (timeConfig.slider_object_snapnum && timeConfig.available_snaps != null && timeConfig.available_snaps[(timeConfig.slider_object_snapnum as Slider).value] != timeConfig.current_snapnum)    
       (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
