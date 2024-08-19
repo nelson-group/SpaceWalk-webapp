@@ -15,7 +15,6 @@ import { CameraConfig } from "./sceneryWithSplines";
 
 import {timeClock} from "./../index"
 
-
 export function calcColor(config: Record<string,any>, density: number) {
     let tmp: number = 1.0 - density;    
     let one_minus_d = new Color3(tmp, tmp, tmp);
@@ -35,17 +34,28 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     parentStackPanel.width = "400px";
     parentStackPanel.isVertical = true;
     parentStackPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    parentStackPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;     
+    parentStackPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;   
+    // parentStackPanel.overlapGroup = 2;  
     myScrollViewer.addControl(parentStackPanel);
-
-    gui_texture.onBeginRenderObservable.addOnce(() => 
-    {
-        gui_texture.moveToNonOverlappedPosition(1,1,1); });
 
     let allPanels = new Array<StackPanel>;
 
     // visualization settings //
     let currentPanel = createStackPanel("Visuzalization Settings", parentStackPanel, allPanels);        
+    let currentButton = Button.CreateImageButton("vis settings button","Visualization Settings", "./../pngwing.com.png");         
+    currentButton.height = "25px";
+    currentButton.width = "300px";    
+    currentButton.background = 'lightgray'; 
+    currentButton.alpha = 0.7;     
+    currentButton.overlapGroup = 1; 
+    currentButton.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
+        allPanels[0].children.forEach(element => {
+            if (element.name != currentButton.name)
+                element.isVisible = !element.isVisible;
+        });        
+    })
+    currentPanel.addControl(currentButton);
+    
     
     let min_color_text_block = new TextBlock();
     min_color_text_block.text = "Min color:";
@@ -65,7 +75,6 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         colorConfig.min_color.copyFrom(value);
         currentMaterial[0].setColor3("min_color", colorConfig.min_color);
     });
-
     currentPanel.addControl(min_color_picker);
 
     let max_color_text_block = new TextBlock();
@@ -131,6 +140,19 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel = createStackPanel("Simulation Settings", parentStackPanel, allPanels); 
     let t_slider = new Slider("ips_slider"); // must be known for other parameters  
     let interpolation_text = new TextBlock("InterpolationText"); // same as above
+    currentButton = Button.CreateImageButton("Simulation Settings button","Simulation Settings", "./../pngwing.com.png");         
+    currentButton.height = "25px";
+    currentButton.width = "300px";    
+    currentButton.background = 'lightgray'; 
+    currentButton.alpha = 0.7;     
+    currentButton.overlapGroup = 1; 
+    currentButton.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
+        allPanels[1].children.forEach(element => {
+            if (element.name != currentButton.name)
+                element.isVisible = !element.isVisible;
+        });        
+    })
+    currentPanel.addControl(currentButton);
 
     let snapnum_text = new TextBlock("snapnumText");
     snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
@@ -289,6 +311,19 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
     // Rendering Settings //
     currentPanel = createStackPanel("Rendering Settings", parentStackPanel, allPanels);  
+    currentButton = Button.CreateImageButton("Rendering Settings button","Rendering Settings", "./../pngwing.com.png");         
+    currentButton.height = "25px";
+    currentButton.width = "300px";    
+    currentButton.background = 'lightgray'; 
+    currentButton.alpha = 0.7;     
+    currentButton.overlapGroup = 1; 
+    currentButton.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
+        allPanels[2].children.forEach(element => {
+            if (element.name != currentButton.name)
+                element.isVisible = !element.isVisible;
+        });        
+    })
+    currentPanel.addControl(currentButton);
 
     let kernel_text = new TextBlock("kernel");
     kernel_text.text = "Kernel scale: " + 0.5.toFixed(2) +" (percentage)";
@@ -380,6 +415,12 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     colorConfig.blendig_modes.forEach((element:[string,number, boolean]) => {
         addRadio(element, currentPanel)
     });
+
+    gui_texture.onBeginRenderObservable.addOnce(() => 
+        {
+            gui_texture.moveToNonOverlappedPosition(1,1,1);
+            gui_texture.moveToNonOverlappedPosition(2,1,1); 
+        });
     
     return currentPanel
 }
