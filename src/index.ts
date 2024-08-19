@@ -152,6 +152,7 @@ let simulationName = "TNG50-4"
 
 
 async function main() {
+    htmlSetup();
   // console.log(memoryUsage());
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
     const divFPS = document.getElementById("fps")!;
@@ -309,5 +310,25 @@ function updateTimeConfig(initial_data: Record<string,any>) {
   timeConfig.min_snapnum = timeConfig.current_snapnum
   timeConfig.max_snapnum = max(initial_data.available_snaps)
   timeConfig.available_snaps = initial_data.available_snaps
+}
+
+function htmlSetup() {
+  let memoryInfoText = document.getElementById("memoryInfo");
+  const memoryInfoButton = document.getElementById("memoryInfoButton");
+  const memoryInfoIcon = document.getElementById("iconId");  
+  if (memoryInfoButton)
+    memoryInfoButton.onclick = (e) => {
+      if (memoryInfoIcon && memoryInfoText && memoryInfoIcon.style.transform != "none")    
+        {    
+        memoryInfoIcon.style.transform = "none";        
+        memoryInfoText.style.display = "none";
+        }
+      else if(memoryInfoIcon && memoryInfoText)
+      {
+        memoryInfoIcon.style.transform = "rotate(90deg)";
+        memoryInfoText.style.display = "inline";
+      }
+      return true;
+    };
 }
 
