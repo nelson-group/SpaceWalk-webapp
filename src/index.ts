@@ -4,6 +4,8 @@ import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, Clou
 import { ceil, max, min, number } from "mathjs";
 import {StackPanel, Slider, TextBlock} from "@babylonjs/gui"
 import { roundNumber } from "./utils/gui";
+import { memoryUsage } from "process";
+import { MemoryConfig } from "./utils/memory";
 
 var timeConfig = {
     "current_snapnum": 80,
@@ -19,7 +21,8 @@ var timeConfig = {
     "intervallId": 0,
     "is_active": false,
     "intervallFunction": null,
-    "t": 0,          
+    "t": 0,
+    "update_t": false,          
     "minimum_fps": 25,
     "material": null
 } 
@@ -149,11 +152,15 @@ let simulationName = "TNG50-4"
 
 
 async function main() {
+  // console.log(memoryUsage());
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
     const divFPS = document.getElementById("fps")!;
     const cameraConfig =  CameraConfig.getInstance();
-    cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!);
+    cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!); 
     DownloadControl.timeConfig = timeConfig;
+
+    const memoryConfig =  MemoryConfig.getInstance();
+    memoryConfig.setMemoryInfoText(document.getElementById("memoryInfo")!);     
     
     const response = await fetch(url + "get/init/" + simulationName + "/" + timeConfig.current_snapnum, {
       method: 'GET',
@@ -220,16 +227,24 @@ async function main() {
         }        
     });
     
-    timeConfig.intervallId = window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
+    timeConfig.intervallId = window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);    
+    memoryConfig.intervalId = window.setInterval(memoryWatcherWrapper, 500);
 }
 
 await main();
 
+async function memoryWatcherWrapper()
+{
+   const memoryConfig = MemoryConfig.getInstance();
+  memoryConfig.memoryWatcher();
+}
+
 export async function timeClock()
 {  
-    if (!timeConfig.is_active)
+    if (!timeConfig.is_active && !timeConfig.update_t)
       return;
     
+    timeConfig.update_t = false;
     timeConfig.t += (1 / timeConfig.number_of_interpolations)
     if (timeConfig.t > 1)            
       timeConfig.current_snapnum += 1    
@@ -240,14 +255,14 @@ export async function timeClock()
         (timeConfig.material[i] as ShaderMaterial).setFloat("t", timeConfig.t);
       }
 
-    if (timeConfig.slider_object_t)
+    if (timeConfig.slider_object_t && timeConfig.is_active)
       (timeConfig.slider_object_t as Slider).value = ( timeConfig.t * (timeConfig.slider_object_t as Slider).maximum)
     
     if (timeConfig.slider_object_snapnum && timeConfig.available_snaps != null && timeConfig.available_snaps[(timeConfig.slider_object_snapnum as Slider).value] != timeConfig.current_snapnum)    
       (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
     
     if (timeConfig.text_object_interpolation)
-      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation: " + roundNumber(timeConfig.t)    
+      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation (t): " + roundNumber(timeConfig.t, 3)    
 }
 
 function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>) {

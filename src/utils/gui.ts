@@ -231,11 +231,11 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         interpolationSteps_text.text = "Interpolationsteps: " + value;
         t_slider.maximum = value;
         t_slider.value = min(value, t_slider.value) ;
-        interpolation_text.text = "Interpolation (t): " + roundNumber(t_slider.value / t_slider.maximum);
+        interpolation_text.text = "Interpolation (t): " + roundNumber(t_slider.value / t_slider.maximum, 3);
     });
     currentPanel.addControl(interpolationSteps_slider);  
-        
-    interpolation_text.text = "Interpolation (t): " + roundNumber(timeConfig.t);
+          
+    interpolation_text.text = "Interpolation (t): " + roundNumber(timeConfig.t, 3);
     interpolation_text.height = "30px";    
     interpolation_text.color = "lightgray";
     currentPanel.addControl(interpolation_text);    
@@ -248,6 +248,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     t_slider.onValueChangedObservable.add(function(value) {
         timeConfig.t = value / t_slider.maximum;
         interpolation_text.text = "Interpolation (t): " + roundNumber(value / t_slider.maximum, 3);
+        timeConfig.update_t = true;
     });
     currentPanel.addControl(t_slider);
 
