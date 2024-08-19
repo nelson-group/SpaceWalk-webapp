@@ -144,7 +144,7 @@ export async function createScene(canvas: HTMLCanvasElement, engine: Engine, col
     if (advancedTexture.layer != null)
         advancedTexture.layer.layerMask = 0x10000000;
 
-    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig, CameraConfig.getInstance());
+    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig, CameraConfig.getInstance(), canvas);
     const camera = setCamera(
         canvas,
         scene,

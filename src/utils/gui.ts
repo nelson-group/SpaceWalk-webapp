@@ -25,9 +25,24 @@ export function calcColor(config: Record<string,any>, density: number) {
     return color4;
 }
 
-export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial[], colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig) {
+export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial[], colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig,canvas: HTMLCanvasElement) {
     //scrollViewIfControllsAreToLarge: consider optimization: https://doc.babylonjs.com/features/featuresDeepDive/gui/scrollViewer    
     const myScrollViewer = new ScrollViewer("customer settings");  
+    myScrollViewer.width = "400px";
+    myScrollViewer.height = "100%";
+    myScrollViewer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    // parentStackPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER; 
+    myScrollViewer.onPointerEnterObservable.add(function(){
+        // console.log("in");
+        if(cameraConfig.camera)
+            cameraConfig.camera.detachControl();        
+    });
+
+    myScrollViewer.onPointerOutObservable.add(function(){
+        // console.log("out");  
+        if(cameraConfig.camera)      
+            cameraConfig.camera.attachControl(cameraConfig, true);        
+    });
     
     gui_texture.addControl(myScrollViewer);
     let parentStackPanel = new StackPanel("customer settings panel");
