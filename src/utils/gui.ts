@@ -13,6 +13,8 @@ import {Container, ScrollViewer, RadioButton, Checkbox, AdvancedDynamicTexture, 
 import { min, max, forEach } from "mathjs";
 import { CameraConfig } from "./sceneryWithSplines";
 
+import {timeClock} from "./../index"
+
 
 export function calcColor(config: Record<string,any>, density: number) {
     let tmp: number = 1.0 - density;    
@@ -148,12 +150,49 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     });
     currentPanel.addControl(snapnum_slider);  
 
+    let ips_text = new TextBlock("interpolations per second (ips)");
+    ips_text.text = "interpolations per second (ips): " + timeConfig.minimum_fps;
+    ips_text.height = "30px";
+    ips_text.color = "lightgray";
+    currentPanel.addControl(ips_text);
+    let ips_slider = new Slider("ips_slider");
+    ips_slider.minimum = 1;
+    ips_slider.maximum = 200;
+    ips_slider.step = 1;
+    ips_slider.value = timeConfig.minimum_fps;
+    ips_slider.height = "20px";
+    ips_slider.width = "200px";
+    ips_slider.onValueChangedObservable.add(function(value) {
+        window.clearInterval(timeConfig.intervallId);
+        timeConfig.intervallId = window.setInterval(timeClock, 1000 / timeConfig.minimum_fps)
+        ips_text.text = "interpolations per second (ips): " + value;
+        timeConfig.minimum_fps = value;
+    });
+    currentPanel.addControl(ips_slider);
+
+    let interpolationSteps_text = new TextBlock("interpolationSteps_text");
+    interpolationSteps_text.text = "Interpolationsteps: " + timeConfig.number_of_interpolations;
+    interpolationSteps_text.height = "30px";
+    interpolationSteps_text.color = "lightgray";
+    currentPanel.addControl(interpolationSteps_text);
+    let interpolationSteps_slider = new Slider("interpolation_steps");
+    interpolationSteps_slider.minimum = 2;
+    interpolationSteps_slider.maximum = 500;
+    interpolationSteps_slider.step = 2;
+    interpolationSteps_slider.value = timeConfig.number_of_interpolations;
+    interpolationSteps_slider.height = "20px";
+    interpolationSteps_slider.width = "200px";
+    interpolationSteps_slider.onValueChangedObservable.add(function(value) {
+        timeConfig.number_of_interpolations =  value;
+        interpolationSteps_text.text = "Interpolationsteps: " + value;
+    });
+    currentPanel.addControl(interpolationSteps_slider);    
+
     let interpolation_text = new TextBlock("InterpolationText");
     interpolation_text.text = "Interpolation: " + timeConfig.t;
     interpolation_text.height = "30px";    
     interpolation_text.color = "lightgray";
     currentPanel.addControl(interpolation_text);
-
     var interpolate_checkbox = new Checkbox();
     interpolate_checkbox.width = "20px";
     interpolate_checkbox.height = "20px";

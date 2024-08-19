@@ -15,7 +15,9 @@ var timeConfig = {
     "slider_object_snapnum": null,
     "text_object_interpolation": null,  
     "number_of_interpolations": 200,
+    "intervallId": 0,
     "is_active": false,
+    "intervallFunction": null,
     "t": 0,          
     "minimum_fps": 25,
     "material": null
@@ -216,14 +218,14 @@ async function main() {
                 });
         }        
     });
-
-    window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
+    
+    timeConfig.intervallId = window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
 }
 
 await main();
 
-async function timeClock()
-{
+export async function timeClock()
+{  
     if (!timeConfig.is_active)
       return;
     
@@ -241,7 +243,7 @@ async function timeClock()
       (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
     
     if (timeConfig.text_object_interpolation)
-      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation: " + roundNumber(timeConfig.t)
+      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation: " + roundNumber(timeConfig.t)    
 }
 
 function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>) {
