@@ -140,19 +140,19 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel = createStackPanel("Simulation Settings", parentStackPanel, allPanels); 
     let t_slider = new Slider("ips_slider"); // must be known for other parameters  
     let interpolation_text = new TextBlock("InterpolationText"); // same as above
-    currentButton = Button.CreateImageButton("Simulation Settings button","Simulation Settings", "./../pngwing.com.png");         
-    currentButton.height = "25px";
-    currentButton.width = "300px";    
-    currentButton.background = 'lightgray'; 
-    currentButton.alpha = 0.7;     
-    currentButton.overlapGroup = 1; 
-    currentButton.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
+    let currentButtonSimulation  = Button.CreateImageButton("Simulation Settings button","Simulation Settings", "./../pngwing.com.png");         
+    currentButtonSimulation.height = "25px";
+    currentButtonSimulation.width = "300px";    
+    currentButtonSimulation.background = 'lightgray'; 
+    currentButtonSimulation.alpha = 0.7;     
+    currentButtonSimulation.overlapGroup = 1; 
+    currentButtonSimulation.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
         allPanels[1].children.forEach(element => {
-            if (element.name != currentButton.name)
+            if (element.name != currentButtonSimulation.name)
                 element.isVisible = !element.isVisible;
         });        
     })
-    currentPanel.addControl(currentButton);
+    currentPanel.addControl(currentButtonSimulation);
 
     let snapnum_text = new TextBlock("snapnumText");
     snapnum_text.text = "Snapnum: " + timeConfig.current_snapnum;
@@ -311,19 +311,19 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
     // Rendering Settings //
     currentPanel = createStackPanel("Rendering Settings", parentStackPanel, allPanels);  
-    currentButton = Button.CreateImageButton("Rendering Settings button","Rendering Settings", "./../pngwing.com.png");         
-    currentButton.height = "25px";
-    currentButton.width = "300px";    
-    currentButton.background = 'lightgray'; 
-    currentButton.alpha = 0.7;     
-    currentButton.overlapGroup = 1; 
-    currentButton.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
+    let currentButtonRendering = Button.CreateImageButton("Rendering Settings button","Rendering Settings", "./../pngwing.com.png");         
+    currentButtonRendering.height = "25px";
+    currentButtonRendering.width = "300px";    
+    currentButtonRendering.background = 'lightgray'; 
+    currentButtonRendering.alpha = 0.7;     
+    currentButtonRendering.overlapGroup = 1; 
+    currentButtonRendering.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
         allPanels[2].children.forEach(element => {
-            if (element.name != currentButton.name)
+            if (element.name != currentButtonRendering.name)
                 element.isVisible = !element.isVisible;
         });        
     })
-    currentPanel.addControl(currentButton);
+    currentPanel.addControl(currentButtonRendering);
 
     let kernel_text = new TextBlock("kernel");
     kernel_text.text = "Kernel scale: " + 0.5.toFixed(2) +" (percentage)";
