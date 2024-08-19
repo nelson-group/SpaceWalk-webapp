@@ -10,7 +10,7 @@ import {
 
 import {Container, ScrollViewer, RadioButton, Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
 
-import { min, max, forEach } from "mathjs";
+import { min, max, forEach, pi } from "mathjs";
 import { CameraConfig } from "./sceneryWithSplines";
 
 import {timeClock} from "./../index"
@@ -25,6 +25,7 @@ export function calcColor(config: Record<string,any>, density: number) {
     return color4;
 }
 
+const rotations = [0, pi / 2]
 export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:ShaderMaterial[], colorConfig: Record<string,any>, timeConfig:Record<string,any>, cameraConfig: CameraConfig,canvas: HTMLCanvasElement) {
     //scrollViewIfControllsAreToLarge: consider optimization: https://doc.babylonjs.com/features/featuresDeepDive/gui/scrollViewer    
     const myScrollViewer = new ScrollViewer("customer settings");  
@@ -57,9 +58,10 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
     // visualization settings //
     let currentPanel = createStackPanel("Visuzalization Settings", parentStackPanel, allPanels);        
-    let currentButton = Button.CreateImageButton("vis settings button","Visualization Settings", "./../pngwing.com.png");         
+    let currentButton = Button.CreateImageButton("vis settings button","Visualization Settings", "./../pngwing.com.png"); 
+    currentButton._children[1].rotation = pi/2;        
     currentButton.height = "25px";
-    currentButton.width = "300px";    
+    currentButton.width = "250px";    
     currentButton.background = 'lightgray'; 
     currentButton.alpha = 0.7;     
     currentButton.overlapGroup = 1; 
@@ -68,6 +70,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
             if (element.name != currentButton.name)
                 element.isVisible = !element.isVisible;
         });        
+        currentButton._children[1].rotation = rotations.filter((x,i)=> x != currentButton._children[1].rotation)[0];
     })
     currentPanel.addControl(currentButton);
     
@@ -155,9 +158,10 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel = createStackPanel("Simulation Settings", parentStackPanel, allPanels); 
     let t_slider = new Slider("ips_slider"); // must be known for other parameters  
     let interpolation_text = new TextBlock("InterpolationText"); // same as above
-    let currentButtonSimulation  = Button.CreateImageButton("Simulation Settings button","Simulation Settings", "./../pngwing.com.png");         
+    let currentButtonSimulation  = Button.CreateImageButton("Simulation Settings button","Simulation Settings", "pngwing.com.png");  
+    currentButtonSimulation._children[1].rotation = pi/2;               
     currentButtonSimulation.height = "25px";
-    currentButtonSimulation.width = "300px";    
+    currentButtonSimulation.width = "250px";    
     currentButtonSimulation.background = 'lightgray'; 
     currentButtonSimulation.alpha = 0.7;     
     currentButtonSimulation.overlapGroup = 1; 
@@ -166,6 +170,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
             if (element.name != currentButtonSimulation.name)
                 element.isVisible = !element.isVisible;
         });        
+        currentButtonSimulation._children[1].rotation = rotations.filter((x,i)=> x != currentButtonSimulation._children[1].rotation)[0];
     })
     currentPanel.addControl(currentButtonSimulation);
 
@@ -328,15 +333,17 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel = createStackPanel("Rendering Settings", parentStackPanel, allPanels);  
     let currentButtonRendering = Button.CreateImageButton("Rendering Settings button","Rendering Settings", "./../pngwing.com.png");         
     currentButtonRendering.height = "25px";
-    currentButtonRendering.width = "300px";    
+    currentButtonRendering.width = "250px";    
     currentButtonRendering.background = 'lightgray'; 
     currentButtonRendering.alpha = 0.7;     
-    currentButtonRendering.overlapGroup = 1; 
-    currentButtonRendering.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear
+    currentButtonRendering.overlapGroup = 1;     
+    currentButtonRendering._children[1].rotation = pi/2;
+    currentButtonRendering.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear        
         allPanels[2].children.forEach(element => {
             if (element.name != currentButtonRendering.name)
                 element.isVisible = !element.isVisible;
         });        
+        currentButtonRendering._children[1].rotation = rotations.filter((x,i)=> x != currentButtonRendering._children[1].rotation)[0];
     })
     currentPanel.addControl(currentButtonRendering);
 
