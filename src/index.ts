@@ -60,6 +60,11 @@ export class DownloadControl{
     return this._node_indices[snapNum]
   }
 
+  public static getPcsDictionary()
+  {
+    return this.pcsDictonary;
+  }
+
   public static set_node_indices(new_node_indices:Array<number>,snapNum: number) {  
       this._node_indices[snapNum] = new_node_indices;
   }
@@ -236,8 +241,8 @@ await main();
 
 async function memoryWatcherWrapper()
 {
-   const memoryConfig = MemoryConfig.getInstance();
-  memoryConfig.memoryWatcher();
+  const memoryConfig = MemoryConfig.getInstance();
+  memoryConfig.memoryWatcher(DownloadControl.getPcsDictionary());
 }
 
 export async function timeClock()

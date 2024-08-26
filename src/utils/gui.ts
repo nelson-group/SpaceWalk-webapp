@@ -10,10 +10,11 @@ import {
 
 import {Container, ScrollViewer, RadioButton, Checkbox, AdvancedDynamicTexture, StackPanel, Control, TextBlock, ColorPicker, Slider, Button, InputText } from "@babylonjs/gui";
 
-import { min, max, forEach, pi } from "mathjs";
+import { min, max, forEach, pi, ceil } from "mathjs";
 import { CameraConfig } from "./sceneryWithSplines";
 
 import {timeClock} from "./../index"
+import { MemoryConfig } from "./memory";
 
 export function calcColor(config: Record<string,any>, density: number) {
     let tmp: number = 1.0 - density;    
@@ -439,6 +440,55 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         addRadio(element, currentPanel)
     });
 
+    // Rendering Settings //
+    currentPanel = createStackPanel("Client Settings", parentStackPanel, allPanels);  
+    let currentButtonClient = Button.CreateImageButton("Client Settings button","Client Settings", "./../pngwing.com.png");         
+    currentButtonClient.height = "25px";
+    currentButtonClient.width = "250px";    
+    currentButtonClient.background = 'lightgray'; 
+    currentButtonClient.alpha = 0.7;     
+    currentButtonClient.overlapGroup = 1;     
+    currentButtonClient._children[1].rotation = pi/2;
+    currentButtonClient.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear        
+        allPanels[3].children.forEach(element => {
+            if (element.name != currentButtonRendering.name)
+                element.isVisible = !element.isVisible;
+        });        
+        currentButtonClient._children[1].rotation = rotations.filter((x,i)=> x != currentButtonClient._children[1].rotation)[0];
+    })
+    currentPanel.addControl(currentButtonClient);
+
+    const memory = MemoryConfig.getInstance();
+    let oldValue = 0;
+    let memory_text = new TextBlock("memory");
+    memory_text.text = "Maximal memory usage: " + 2048 +" (MB)";
+    memory_text.height = "30px";
+    memory_text.color = "lightgray";
+    currentPanel.addControl(memory_text);
+    var memory_slider = new Slider();
+    memory_slider.minimum = 1;
+    memory_slider.maximum = 99;
+    memory_slider.value = 4;
+    memory_slider.height = "20px";
+    memory_slider.width = "200px";
+    memory_slider.step = 2;
+    memory_slider.onValueChangedObservable.add(function(value) {  
+        if (memory.getCurrentMemory() > value * 512)
+        {
+            console.log("Cannot set maximum memory below current usage. Set to lowest possible maximum memory.")            
+            memory_slider.value = ceil(memory.getCurrentMemory() / 512);
+        }        
+        else
+        {
+            memory_text.text = "Maxmial memory usage: " + value * 512 +" (MB)";
+            memory.setMaxMemory(value * 512);
+            memory.updateMemoryInfoText();
+        }
+    });
+    currentPanel.addControl(memory_slider);  
+
+
+    // finalize
     gui_texture.onBeginRenderObservable.addOnce(() => 
         {
             gui_texture.moveToNonOverlappedPosition(1,1,1);

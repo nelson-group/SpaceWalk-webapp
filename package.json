@@ -23,6 +23,7 @@
   "dependencies": {
     "jsfive": "^0.3.14",
     "mathjs": "^11.12.0",
+    "process": "^0.11.10",
     "spectorjs": "^0.9.30"
   }
 }
