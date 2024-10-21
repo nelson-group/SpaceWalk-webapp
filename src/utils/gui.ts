@@ -451,7 +451,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentButtonClient._children[1].rotation = pi/2;
     currentButtonClient.onPointerClickObservable.add(function(value) { //make anything isntead of button disappear        
         allPanels[3].children.forEach(element => {
-            if (element.name != currentButtonRendering.name)
+            if (element.name != currentButtonClient.name)
                 element.isVisible = !element.isVisible;
         });        
         currentButtonClient._children[1].rotation = rotations.filter((x,i)=> x != currentButtonClient._children[1].rotation)[0];
