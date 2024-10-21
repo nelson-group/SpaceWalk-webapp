@@ -5,9 +5,11 @@ import { drawSpheres } from "./spheres";
 import { calcColor, buildGUI} from "./gui";
 import { VectorFieldVisualizer } from "./arrow";
 
-import { Scene, PointsCloudSystem, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera, Color3 } from "@babylonjs/core";
+import { Scene, Matrix, ArcRotateCamera, Vector3, Engine, ShaderMaterial, Mesh, StandardMaterial, PushMaterial, CloudPoint, Color4, Nullable, UniversalCamera, FreeCameraKeyboardMoveInput, ArcRotateCameraKeyboardMoveInput, Camera, Color3, Material, DepthReducer, DepthRenderer, OnAfterEnteringVRObservableEvent, PostProcess, Texture, Effect, Vector2, Vector4, CubeTexture, MaterialHelper } from "@babylonjs/core";
+import { Inspector} from "@babylonjs/inspector";
 import { AdvancedDynamicTexture, StackPanel } from "@babylonjs/gui";
 import { DownloadControl } from "..";
+
 
 export type camera_information_json = {
     x: number;
@@ -75,11 +77,12 @@ function boxIntersect(minBox: Vector3, maxBox: Vector3, minCamera: Vector3, maxC
         return 0 
 }
 
-function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<string,any>) {
+function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<string,any>): Camera {
     let cameraConfig = CameraConfig.getInstance()
-    var camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
-    cameraConfig.camera = camera;
-    (timeConfig.material as ShaderMaterial).setVector3("camera_pos", camera.position);
+    var camera = new ArcRotateCamera("ViewCamera", -Math.PI / 2, Math.PI / 1.65, cameraConfig.cameraRadius.x, cameraConfig.viewboxCenter, scene);    
+    cameraConfig.camera = camera;    
+    camera.minZ = 0.1;
+    (timeConfig.material[0] as ShaderMaterial).setVector3("camera_pos", camera.position);
     camera.attachControl(canvas, true);
     
     (camera.inputs.attached.keyboard as ArcRotateCameraKeyboardMoveInput).panningSensibility = 1;
@@ -87,7 +90,7 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
     camera.onViewMatrixChangedObservable.add(() => 
     {       
         cameraConfig.updateCameraInfoText(camera.radius, camera.target, camera.position);
-        (timeConfig.material as ShaderMaterial).setVector3("camera_pos", camera.position);        
+        (timeConfig.material[0] as ShaderMaterial).setVector3("camera_pos", camera.position);        
         if(cameraConfig.cameraRadius._x != camera.radius)
         {
             cameraConfig.cameraRadius = new Vector3(camera.radius, camera.radius,camera.radius);
@@ -105,54 +108,128 @@ function setCamera(canvas: HTMLCanvasElement, scene: Scene,  timeConfig:Record<s
             cameraConfig.viewboxMax = viewboxMax
             cameraConfig.viewboxCenter = camera.target 
             DownloadControl.finishedDownload = false                
-        }                                
-        
-    });     
+        }   
+        let distanceCamera2target = (camera.position.subtract(camera.target)).length(); 
+        let maxViewOfCamera = distanceCamera2target * 3 //empirical value
+        camera.maxZ = maxViewOfCamera; 
+        (timeConfig.material[0] as ShaderMaterial).setFloat("farPlane",maxViewOfCamera); //must be a bit smaller than maxViewOfCamera such that the points beginn with color 0.        
+        (timeConfig.material[1] as ShaderMaterial).setFloat("farPlane",maxViewOfCamera); //must be a bit smaller than maxViewOfCamera such that the points beginn with color 0.        
+    }); 
+    
+    //second camera for gui to avoid post processing
+    var guiCamera = new ArcRotateCamera("guiCamera", Math.PI / 2 + Math.PI / 7, Math.PI / 2, 100,
+    new Vector3(0, 20, 0),
+    scene);
+    guiCamera.layerMask = 0x10000000;
+
+    scene.activeCameras = [camera, guiCamera];
+    return camera;
 }
 
-export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true, initial_data: Record<string,any>): Promise<[Scene, ShaderMaterial, StackPanel]>
+export async function createScene(canvas: HTMLCanvasElement, engine: Engine, colorConfig:Record<string,any>, timeConfig:Record<string,any>, displayOutline: boolean = true, initial_data: Record<string,any>): Promise<[Scene, ShaderMaterial[], DepthRenderer]>
  {    
     CameraConfig.getInstance().simulationBoxSize = initial_data["BoxSize"]
-    var scene = new Scene(engine);
-    
-    scene.clearColor = (new Color3(0.06,0.06,0.09)).toColor4(1); // background color
-    // var pcs = new PointsCloudSystem("pcs",20, scene, { updatable: true }); //size has no effect when using own shader. Maybe overwritten by shader? Ja, ist so.               
-    // pcs.addPoints(500, testFunc);
-    // var mesh = await pcs.buildMeshAsync();
-    let material = createMaterial(scene, colorConfig, timeConfig)    
+    var scene = new Scene(engine); 
+    // scene.debugLayer.show();
+    // Inspector.Show(scene,{});
+    // scene.debugLayer.show({
+    //     embedMode: true,
+    //   });
+
+    scene.clearColor = (new Color3(0.15,0.15,0.2)).toColor4(1); // background color
+  
+    let material = createMaterial(scene, colorConfig, timeConfig);
 
     var advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+    if (advancedTexture.layer != null)
+        advancedTexture.layer.layerMask = 0x10000000;
 
-    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig, CameraConfig.getInstance());
-    setCamera(
+    let guiPanel = buildGUI(advancedTexture, material, colorConfig, timeConfig, CameraConfig.getInstance(), canvas);
+    const camera = setCamera(
         canvas,
         scene,
         timeConfig          
     );
+        
+    // todo: GUI things: https://github.com/Popov72/FluidRendering/wiki/Fluid-Rendering-with-Babylon.js#using-the-scene-depth-buffer-when-generating-the-thickness-texture
+    let renderer = scene.enableDepthRenderer(); // it must have a camera! so init it after the camera        
+    // scene.useOrderIndependentTransparency = true
+    // let biliteralPostProcessX = new PostProcess("Biliteral Blur X", "./biliteralBlur",["blurdir","backColor"],["textureSampler","depthSampler"],1, camera, Texture.BILINEAR_SAMPLINGMODE, engine, false) // ratio must be adapted; update (10.07.24): It must be 1 (ratio is ratio between screensize and texture)
+    // biliteralPostProcessX.scaleMode = Engine.SCALEMODE_NEAREST;//TODO: check: maybe must set the blending mode here too
+    // biliteralPostProcessX.alwaysForcePOT = true;    
+    // biliteralPostProcessX.onApply = function(effect:Effect){
+    //     effect.setVector2("blurdir", new Vector2(1,0));         
+    //     effect.setTexture("depthSampler", renderer.getDepthMap());
+    // }      
+    // // biliteralPostProcessX.autoClear = true;
+    // // biliteralPostProcessX.alphaMode = Engine.ALPHA_COMBINE;      
 
-    return [scene, material, guiPanel];
+    // let biliteralPostProcessY = new PostProcess("Biliteral Blur Y", "./biliteralBlur",["blurdir","backColor"],["textureSampler", "depthSampler"],1, camera, Texture.BILINEAR_SAMPLINGMODE, engine, false) // ratio must be adapted 
+    // biliteralPostProcessY.scaleMode = Engine.SCALEMODE_NEAREST;//TODO: check: maybe must set the blending mode here too
+    // biliteralPostProcessY.alwaysForcePOT = true;    
+    // biliteralPostProcessY.onApply = function(effect:Effect){
+    //     effect.setVector2("blurdir", new Vector2(0,1));                 
+    //     effect.setTexture("depthSampler", renderer.getDepthMap());         
+    // }    
+    // biliteralPostProcessY.autoClear = true;
+    // biliteralPostProcessY.alphaMode = Engine.ALPHA_COMBINE;
+    // biliteralPostProcessX.shareOutputWith(biliteralPostProcessY);
+    // const envTexture = CubeTexture.CreateFromPrefilteredData(
+    //     "https://playground.babylonjs.com/textures/environment.env",
+    //     scene
+    // );
+
+    // let skybox = scene.createDefaultSkybox(envTexture);
+    // if  (skybox != null)
+    //     skybox.infiniteDistance = true;
+
+    // let fluidRendering = scene.enableFluidRenderer();
+    
+
+    return [scene, material, renderer];
 }
 
 
-function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:Record<string,any>):ShaderMaterial{
+function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:Record<string,any>):ShaderMaterial[]{
+    // function createMaterial(scene:Scene, colorConfig:Record<string,any>, timeConfig:Record<string,any>, renderer:DepthRenderer):ShaderMaterial{
     // mesh.setVerticesData("densities", allDensitiesGlobal, false, 1);            
-    var shaderMaterial = new ShaderMaterial("shader", scene, "./splineInterpolator",{                                    
-        attributes: ["position", "densities", "voronoi", "splinesA", "splinesB", "splinesC"],
-        uniforms: ["worldViewProjection","scale", "camera_pos", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"]                
+    var shaderMaterial = new ShaderMaterial("shader", scene, {vertex: "./splineInterpolator",fragment:"./splineInterpolator" },{      
+        attributes: ["position", "densities", "voronoi", "splinesA", "splinesB", "splinesC"], 
+        uniforms: ["farPlane","worldViewProjection","scale", "min_color", "max_color","min_density","max_density","kernel_scale","point_size", "t"],
+        defines:["logDepth"]       
         });                            
     shaderMaterial.setColor3("min_color", colorConfig.min_color);
     shaderMaterial.setColor3("max_color", colorConfig.max_color);        
     shaderMaterial.setFloat("min_density", colorConfig.quantiles[colorConfig.start_quantile-10]);
     shaderMaterial.setFloat("max_density", colorConfig.quantiles[colorConfig.start_quantile+10]);
-    shaderMaterial.setFloat("kernel_scale", 12);
+    shaderMaterial.setFloat("kernel_scale", 0.5);
     shaderMaterial.setFloat("point_size", 12);
-    shaderMaterial.setFloat("scale", 100);
-    shaderMaterial.backFaceCulling = false;            
+    shaderMaterial.setFloat("scale", 1);
+    shaderMaterial.setFloat("farPlane", 200*3); // just any initial value because gets updated from camera change 
+    shaderMaterial.backFaceCulling = false;   
     shaderMaterial.pointsCloud = true;
-    shaderMaterial.alphaMode = colorConfig.blendig_modes[0][1];
-    timeConfig.material = shaderMaterial;
+    shaderMaterial.alpha = 0.1; 
+    shaderMaterial.alphaMode = Engine.ALPHA_ADD;                     
+
+    var depthShaderMaterial = new ShaderMaterial("shader", scene, {vertex: "./splineInterpolator",fragment:"./depth" },{                                    
+        attributes: ["position", "densities", "voronoi", "splinesA", "splinesB", "splinesC"],
+        uniforms: ["farPlane","worldViewProjection", "scale", "kernel_scale","point_size", "t"],
+        defines:["logDepth"]        
+        });                            
+    depthShaderMaterial.setFloat("point_size", 12);
+    depthShaderMaterial.setFloat("kernel_scale", 0.5);
+    depthShaderMaterial.setFloat("scale", 1);
+    depthShaderMaterial.setFloat("t", 0);
+    depthShaderMaterial.setFloat("farPlane", 200*3); // just any initial value because gets updated from camera change
+    depthShaderMaterial.backFaceCulling = false;   
+    depthShaderMaterial.pointsCloud = true;
+    // shaderMaterial.forceDepthWrite = true; 
+    // depthShaderMaterial.alphaMode = colorConfig.blendig_modes[0][0];    
+            
+    timeConfig.material = [shaderMaterial, depthShaderMaterial];
+    return [shaderMaterial, depthShaderMaterial]
     
-    return shaderMaterial
+    // return shaderMaterial
     }
     
 

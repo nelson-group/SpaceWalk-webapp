@@ -13,27 +13,28 @@ attribute vec4 color;
 uniform mat4 worldViewProjection;
 uniform float t;
 uniform float point_size;
-uniform vec3 camera_pos;
 uniform float scale;
-// uniform float scale;
+uniform float farPlane;
 
 varying vec2 vdensityVary;
-#define scale_coef 0.02
+varying float vDepth;
+varying float vSphereRadius;
+
+#define scale_coef 1.
 
 void main()
-{
+{    
+    float tsquare = t * t; //saves one, yes ONE operation!    
+    vec3 positionNew = splinesA*t*tsquare + splinesB*tsquare + splinesC*t + position; //at^3 + bt^2 + ct +d     
     
-    float tsquare = t * t; //saves one, yes ONE operation!
-    // vec3 t1 = tsquare * t * a; all in one formular to save registers
-    // vec3 t2 = tsquare * b;
-    // vec3 t3 = t * c;
-    // float t4 = d;
-    vec3 positionNew = splinesA*t*tsquare + splinesB*tsquare + splinesC*t + position; //at^3 + bt^2 + ct +d 
-    
-    gl_Position = worldViewProjection * vec4(positionNew, 1.0);  
-    vdensityVary = densities;
-    
-        
-    gl_PointSize = (point_size * voronoi) + 1. / (scale_coef * length(position - camera_pos) + 1.) * scale;
+    gl_Position = worldViewProjection * vec4(positionNew, 1.0); 
+    float clipSpaceDepthNormalized = clamp(1. - gl_Position.z / (farPlane * 1.1), 0., 1.);    
+    gl_PointSize = point_size * voronoi; // (100. * pow(clipSpaceDepthNormalized,scale));// * scale_coef * pow(1. - clipSpaceDepthNormalized  + 1., scale);            
+    gl_PointSize *= (1. + scale * pow(clipSpaceDepthNormalized,scale));// * scale_coef * pow(1. - clipSpaceDepthNormalized  + 1., scale);            
+
+    // varyings
+    vDepth = gl_Position.z / farPlane;
+    vdensityVary = densities; 
+    vSphereRadius = gl_PointSize;         
 }  
 

@@ -1,9 +1,11 @@
 import { createScene, CameraConfig } from "./utils/sceneryWithSplines";  
 
-import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray, Material } from "@babylonjs/core";
+import { Engine, Nullable, Mesh, Color3, ShaderMaterial, PointsCloudSystem, CloudPoint, Vector3, Scene, FloatArray, Material, DepthRenderer } from "@babylonjs/core";
 import { ceil, max, min, number } from "mathjs";
 import {StackPanel, Slider, TextBlock} from "@babylonjs/gui"
 import { roundNumber } from "./utils/gui";
+import { memoryUsage } from "process";
+import { MemoryConfig } from "./utils/memory";
 
 var timeConfig = {
     "current_snapnum": 80,
@@ -13,10 +15,14 @@ var timeConfig = {
     "available_snaps": null,
     "text_object_snapnum": null,
     "slider_object_snapnum": null,
+    "slider_object_t": null,
     "text_object_interpolation": null,  
     "number_of_interpolations": 200,
+    "intervallId": 0,
     "is_active": false,
-    "t": 0,          
+    "intervallFunction": null,
+    "t": 0,
+    "update_t": false,          
     "minimum_fps": 25,
     "material": null
 } 
@@ -55,6 +61,11 @@ export class DownloadControl{
     return this._node_indices[snapNum]
   }
 
+  public static getPcsDictionary()
+  {
+    return this.pcsDictonary;
+  }
+
   public static set_node_indices(new_node_indices:Array<number>,snapNum: number) {  
       this._node_indices[snapNum] = new_node_indices;
   }
@@ -87,7 +98,10 @@ export class DownloadControl{
     this.timeConfig.is_active = old_interpolation_state;
     timeConfig.t = 0;
     if (timeConfig.material)
-      (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
+      {
+      (timeConfig.material[0] as ShaderMaterial).setFloat("t", timeConfig.t);
+      (timeConfig.material[1] as ShaderMaterial).setFloat("t", timeConfig.t);
+      }
     
     if(this.pcsDictonary[newSnapnum])
       this.pcsDictonary[newSnapnum].forEach(element => {
@@ -144,11 +158,16 @@ let simulationName = "TNG50-4"
 
 
 async function main() {
+    htmlSetup();
+  // console.log(memoryUsage());
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
     const divFPS = document.getElementById("fps")!;
     const cameraConfig =  CameraConfig.getInstance();
-    cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!);
+    cameraConfig.setCameraInfoText(document.getElementById("cameraInfo")!); 
     DownloadControl.timeConfig = timeConfig;
+
+    const memoryConfig =  MemoryConfig.getInstance();
+    memoryConfig.setMemoryInfoText(document.getElementById("memoryInfo")!);     
     
     const response = await fetch(url + "get/init/" + simulationName + "/" + timeConfig.current_snapnum, {
       method: 'GET',
@@ -156,13 +175,14 @@ async function main() {
     const initial_data = await response.json()
     updateTimeConfig(initial_data);
 
-    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });        
+    var engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });                
     
     colorConfigUpdate(initial_data, colorConfig);
-    var [scene, material] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
-    scene.fogMode = Scene.FOGMODE_LINEAR;
-    scene.fogStart = 0.0;
-    scene.fogEnd = 60.0;
+    var [scene, material, renderer] = await createScene(canvas, engine, colorConfig, timeConfig, true, initial_data);   
+    // fog might not needed for own shader with depth
+    // scene.fogMode = Scene.FOGMODE_LINEAR; // fog usage for own shader: https://doc.babylonjs.com/features/featuresDeepDive/materials/shaders/Fog+ShaderMat
+    // scene.fogStart = 0.0;
+    // scene.fogEnd = 60.0;
 
     window.addEventListener('resize', function () {
         engine.resize();
@@ -204,8 +224,9 @@ async function main() {
                     DownloadControl.downloadInProcess = false
                     return
                 }
-                  updateMesh(data, material, scene)                  
-                  updateMetaDataOnClient(data, data.snapnum);              
+
+                  updateMesh(data, material, scene, renderer)                  
+                  updateMetaDataOnClient(data, data.snapnum);                  
                   DownloadControl.downloadInProcess = false;
                 })
                 .catch(error => {
@@ -214,29 +235,43 @@ async function main() {
                 });
         }        
     });
-
-    window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);
+    
+    timeConfig.intervallId = window.setInterval(timeClock, 1000 / timeConfig.minimum_fps);    
+    memoryConfig.intervalId = window.setInterval(memoryWatcherWrapper, 500);
 }
 
 await main();
 
-async function timeClock()
+async function memoryWatcherWrapper()
 {
-    if (!timeConfig.is_active)
+  const memoryConfig = MemoryConfig.getInstance();
+  memoryConfig.memoryWatcher(DownloadControl.getPcsDictionary());
+}
+
+export async function timeClock()
+{  
+    if (!timeConfig.is_active && !timeConfig.update_t)
       return;
     
+    timeConfig.update_t = false;
     timeConfig.t += (1 / timeConfig.number_of_interpolations)
     if (timeConfig.t > 1)            
-      timeConfig.current_snapnum += 1
+      timeConfig.current_snapnum += 1    
       
     if (timeConfig.material)
-      (timeConfig.material as ShaderMaterial).setFloat("t", timeConfig.t);
+      for (let i = 0; i < (timeConfig.material as any[]).length; i++)
+      {
+        (timeConfig.material[i] as ShaderMaterial).setFloat("t", timeConfig.t);
+      }
+
+    if (timeConfig.slider_object_t && timeConfig.is_active)
+      (timeConfig.slider_object_t as Slider).value = ( timeConfig.t * (timeConfig.slider_object_t as Slider).maximum)
     
     if (timeConfig.slider_object_snapnum && timeConfig.available_snaps != null && timeConfig.available_snaps[(timeConfig.slider_object_snapnum as Slider).value] != timeConfig.current_snapnum)    
       (timeConfig.slider_object_snapnum as Slider).value = (timeConfig.available_snaps as Array<number>).indexOf(timeConfig.current_snapnum)    
     
     if (timeConfig.text_object_interpolation)
-      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation: " + roundNumber(timeConfig.t)
+      (timeConfig.text_object_interpolation as TextBlock).text = "Interpolation (t): " + timeConfig.t.toFixed(3)   
 }
 
 function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record<string,any>) {
@@ -248,7 +283,7 @@ function colorConfigUpdate(dataResponse: Record<string,any>, colorConfig: Record
     colorConfig.start_quantile = ceil(colorConfig.n_quantiles / 2)
 }
 
-async function updateMesh(data: Record<string,any>, material: ShaderMaterial, scene:Scene) {         
+async function updateMesh(data: Record<string, any>, material: ShaderMaterial[], scene: Scene, renderer: DepthRenderer) {         
   let pcsName = "pcs" + timeConfig.current_snapnum + call++;
   let pcs2 = new PointsCloudSystem(pcsName, 20, scene);
   DownloadControl.addPcsToDict(pcs2, data.snapnum);
@@ -257,8 +292,8 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
   } 
   pcs2.addPoints(data.nParticles, placeholderForShader); 
 
-  var pcsMesh = await pcs2.buildMeshAsync(material);
-  pcsMesh.hasVertexAlpha = true;          
+  var pcsMesh = await pcs2.buildMeshAsync(material[0]);
+  // pcsMesh.hasVertexAlpha = true;          
   pcsMesh.setVerticesData("densities", data.densities as FloatArray, false, 2);      
   pcsMesh.setVerticesData("voronoi", data.voronoi_diameter_extended as FloatArray, false, 1);   
   pcsMesh.setVerticesData("splinesA", data.splines_a as FloatArray, false, 3);
@@ -267,6 +302,9 @@ async function updateMesh(data: Record<string,any>, material: ShaderMaterial, sc
   if (timeConfig.current_snapnum != data.snapnum)
     pcsMesh.visibility = 0;
   console.log(call)    
+  
+  // let renderer = scene._depthRenderer[scene.cameras[0].id]; //must be the viewCamera
+  renderer.setMaterialForRendering(pcsMesh, material[1]);
 }
 
 function updateMetaDataOnClient(data: Record<string,any>, current_snapnum: number) {
@@ -280,5 +318,25 @@ function updateTimeConfig(initial_data: Record<string,any>) {
   timeConfig.min_snapnum = timeConfig.current_snapnum
   timeConfig.max_snapnum = max(initial_data.available_snaps)
   timeConfig.available_snaps = initial_data.available_snaps
+}
+
+function htmlSetup() {
+  let memoryInfoText = document.getElementById("memoryInfo");
+  const memoryInfoButton = document.getElementById("memoryInfoButton");
+  const memoryInfoIcon = document.getElementById("iconId");  
+  if (memoryInfoButton)
+    memoryInfoButton.onclick = (e) => {
+      if (memoryInfoIcon && memoryInfoText && memoryInfoIcon.style.transform != "none")    
+        {    
+        memoryInfoIcon.style.transform = "none";        
+        memoryInfoText.style.display = "none";
+        }
+      else if(memoryInfoIcon && memoryInfoText)
+      {
+        memoryInfoIcon.style.transform = "rotate(90deg)";
+        memoryInfoText.style.display = "inline";
+      }
+      return true;
+    };
 }
 
