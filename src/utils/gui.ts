@@ -13,7 +13,7 @@ import {Container, ScrollViewer, RadioButton, Checkbox, AdvancedDynamicTexture, 
 import { min, max, forEach, pi, ceil } from "mathjs";
 import { CameraConfig } from "./sceneryWithSplines";
 
-import {timeClock} from "./../index"
+import {timeClock, DownloadControl} from "./../index"
 import { MemoryConfig } from "./memory";
 
 export function calcColor(config: Record<string,any>, density: number) {
@@ -486,6 +486,25 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
         }
     });
     currentPanel.addControl(memory_slider);  
+
+    let percentage_text = new TextBlock("Download Percentage");
+    percentage_text.text = "Download Percentage: " + DownloadControl.percentage;
+    percentage_text.height = "30px";    
+    percentage_text.color = "lightgray";
+    currentPanel.addControl(percentage_text);
+
+    let percentage_slider = new Slider("percentage_slider");
+    percentage_slider.minimum = 0;
+    percentage_slider.maximum = 1;
+    percentage_slider.step = 0.1;
+    percentage_slider.value = 0.1
+    percentage_slider.height = "20px";
+    percentage_slider.width = "200px";
+    percentage_slider.onValueChangedObservable.add(function(value) {
+	    DownloadControl.percentage = value;
+	    percentage_text.text = "Download Percentage: " + value.toFixed(1);
+    });
+    currentPanel.addControl(percentage_slider);
 
 
     // finalize

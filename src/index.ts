@@ -153,7 +153,7 @@ export class DownloadControl{
 
 let call = 0;
 
-const url = "http://94.16.31.82:8888/v1/";
+const url = "http://94.16.31.82:9999/v1/";
 let simulationName = "TNG50-4"
 
 
