@@ -44,6 +44,7 @@ var colorConfig = {
 export class DownloadControl{
   public static downloadInProcess = false
   public static batch_size_lod = 500; 
+  public static percentage = 0.1; 
   public static timeConfig:Record<string,any> = {}
   
   private static _finishedDownload = false
@@ -152,7 +153,7 @@ export class DownloadControl{
 
 let call = 0;
 
-const url = "http://94.16.31.82:9999/v1/";
+const url = "http://94.16.31.82:8888/v1/";
 let simulationName = "TNG50-4"
 
 
@@ -199,7 +200,8 @@ async function main() {
                     "node_indices": DownloadControl.get_node_indices(timeConfig.current_snapnum),
                     "level_of_detail": DownloadControl.get_level_of_detail(timeConfig.current_snapnum),
                     "batch_size_lod": DownloadControl.batch_size_lod,
-                    "camera_information": cameraConfig.getCameraConfig()
+                    "camera_information": cameraConfig.getCameraConfig(),
+                    "percentage": DownloadControl.percentage
               };
             
             fetch(url + "get/splines/" + simulationName + "/" + timeConfig.current_snapnum, {
@@ -222,6 +224,7 @@ async function main() {
                     DownloadControl.downloadInProcess = false
                     return
                 }
+
                   updateMesh(data, material, scene, renderer)                  
                   updateMetaDataOnClient(data, data.snapnum);                  
                   DownloadControl.downloadInProcess = false;
