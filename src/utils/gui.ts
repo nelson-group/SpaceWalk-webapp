@@ -116,7 +116,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel.addControl(max_color_picker);
 
     let min_opacity_text = new TextBlock();
-    min_opacity_text.text = "Min Density: " + colorConfig.quantiles[colorConfig.start_quantile-10].toFixed(11);
+    min_opacity_text.text = "Min density: " + colorConfig.quantiles[colorConfig.start_quantile-10].toFixed(11);
     min_opacity_text.height = "30px";    
     min_opacity_text.color = "lightgray";
     currentPanel.addControl(min_opacity_text);
@@ -136,7 +136,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel.addControl(min_slider);
 
     let max_opacity_text = new TextBlock();
-    max_opacity_text.text = "Max Density: " + colorConfig.quantiles[colorConfig.start_quantile+10].toFixed(11);
+    max_opacity_text.text = "Max density: " + colorConfig.quantiles[colorConfig.start_quantile+10].toFixed(11);
     max_opacity_text.height = "30px";
     max_opacity_text.color = "lightgray";
     currentPanel.addControl(max_opacity_text);

@@ -14,7 +14,7 @@ void main() {
    uv.xy = abs(gl_PointCoord*2.-1.); //wertebereich built in gl_PointCoord = 0,1
    float r2 = dot(uv.xy,  uv.xy);
    float pointSize = kernel_scale * maxKernel;
-   if (r2 >= pointSize) discard; //discard position on voxel / must be smaller than 1   
+  // if (r2 >= pointSize) discard; //discard position on voxel / must be smaller than 1   
    // r2 = clamp( r2,0.,1.);
    uv.z = sqrt(1.- r2) / vSphereRadius; //actual uv.z from in clipsspace (from 0-1 to 0.0000 because of smallness of particles
    
