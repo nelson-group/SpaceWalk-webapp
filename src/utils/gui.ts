@@ -130,7 +130,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     min_slider.width = "200px";
     min_slider.onValueChangedObservable.add(function(value) {
         let density = colorConfig.quantiles[value]
-        min_opacity_text.text = "Min Density: " + density.toFixed(12);        
+        min_opacity_text.text = "Min density: " + density.toFixed(12);        
         currentMaterial[0].setFloat("min_density", density); 
     });
     currentPanel.addControl(min_slider);
@@ -150,7 +150,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     max_slider.width = "200px";
     max_slider.onValueChangedObservable.add(function(value) {
         let density = colorConfig.quantiles[value]
-        max_opacity_text.text = "Max Density: " + density.toFixed(12);        
+        max_opacity_text.text = "Max density: " + density.toFixed(12);        
         currentMaterial[0].setFloat("max_density", density); 
     });
     currentPanel.addControl(max_slider);
@@ -408,7 +408,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
 
     var textblock = new TextBlock();
     textblock.height = "30px";
-    textblock.text = "Blending Modes:"    
+    textblock.text = "Blending modes:"    
     textblock.color = "lightgray";
     currentPanel.addControl(textblock);         
 
@@ -488,7 +488,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     currentPanel.addControl(memory_slider);  
 
     let percentage_text = new TextBlock("Download Percentage");
-    percentage_text.text = "Download Percentage: " + DownloadControl.percentage;
+    percentage_text.text = "Download percentage: " + DownloadControl.percentage;
     percentage_text.height = "30px";    
     percentage_text.color = "lightgray";
     currentPanel.addControl(percentage_text);
@@ -502,7 +502,7 @@ export function buildGUI(gui_texture: AdvancedDynamicTexture , currentMaterial:S
     percentage_slider.width = "200px";
     percentage_slider.onValueChangedObservable.add(function(value) {
 	    DownloadControl.percentage = value;
-	    percentage_text.text = "Download Percentage: " + value.toFixed(1);
+	    percentage_text.text = "Download percentage: " + value.toFixed(1);
     });
     currentPanel.addControl(percentage_slider);
 
