@@ -155,3 +155,17 @@ In the case of adding a control to a group first a text must be added as the lab
     currentPanel.addControl(percentage_slider);
 ```
 *Note:* The functionality is inline but can be changed at will for your purposes. Here, it is often used to update either the UI itself or update objects that control the rendering.
+
+### sceneryWithSplines
+
+sceneryWithSplines is the initial code for the scene. It controls the camera and the scene itself. Herby, the file is separeted into 3 main parts: the camera, the materias and the scnene. 
+
+**The camera** is realized by an singleton export class *CameraConfig*. It holds the position, the target position of the center of the viewbox) and the radius (size of the viewbox). The viewbox is the calculated visible area within the simulation space. The coordinates are in space coordinates of the simulation. An ArcRotateCamera is used (see https://doc.babylonjs.com/features/featuresDeepDive/cameras).
+
+The Camera position is updated with the **onViewMatrixChangeObservable** which is automatically started by the Babylonengines as soon the camera is moved (and therefore the vie matrix changes). **onViewMatrixChangeObservable** is able to push new information to the material, like the camera positon or the farplane (maximal visible area). Additionally, the funtion checks if the camera is moved to another position and the new viewbox is aligned with the current one. The box did not move (like possible with an rotation) nothiung is done, but if the viewbox moves, new data may be loaded and thus the download process is reactivated.
+
+Finally, there is a guiCamera, that has an own layer for the gui such that the gui is not effected by postprocessing effects.
+
+**The scene** create initializes the camera, the gui and the post processing. The postprocessing is only used for a proper fluidrendering, which is currently not available. 
+
+**The material** initialzes the material, i.e. the shader for the particles in our case. The material is called shaderMaterial and is based on https://doc.babylonjs.com/features/featuresDeepDive/materials/shaders/shaderMaterial. The most commen usage is to initilize the uniforms, the attributes and the defines. Also is create a material, that can be applied to a new pcs. Thus, we have full control on the appearance of the particles. It also initilizes the depthShaderMaterial which is used to calcuate the proper z-values (High interest for proper fluid rendering). Most uniforms are used to push the user settings from the gui to the shaders. In *index.ts:updateMesh* the material is connected to the pcs. Two shaders are used to impact the appearance of the particles: The vertexshader *splineInterpolator.vertex.fx* and the fragmentshader *splineInterpolator.fragment.fx*
