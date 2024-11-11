@@ -169,3 +169,22 @@ Finally, there is a guiCamera, that has an own layer for the gui such that the g
 **The scene** create initializes the camera, the gui and the post processing. The postprocessing is only used for a proper fluidrendering, which is currently not available. 
 
 **The material** initialzes the material, i.e. the shader for the particles in our case. The material is called shaderMaterial and is based on https://doc.babylonjs.com/features/featuresDeepDive/materials/shaders/shaderMaterial. The most commen usage is to initilize the uniforms, the attributes and the defines. Also is create a material, that can be applied to a new pcs. Thus, we have full control on the appearance of the particles. It also initilizes the depthShaderMaterial which is used to calcuate the proper z-values (High interest for proper fluid rendering). Most uniforms are used to push the user settings from the gui to the shaders. In *index.ts:updateMesh* the material is connected to the pcs. Two shaders are used to impact the appearance of the particles: The vertexshader *splineInterpolator.vertex.fx* and the fragmentshader *splineInterpolator.fragment.fx*
+
+### Shader
+
+#### Vertex Shader
+Main focus is the interpolation based on t to interpolate between two snapshots. the Formular is based on the usual hermit-spline calculation. The spline-coefficionts are precalculated, downloaded from the server and used as attributes for each particle.
+
+Also, the *gl_pointSize* is calculated, which changes the size based on the initial size and the distance scale. 
+Finally, the normalized depth is forwarded to the fragment shader.
+
+**Depth** uses the same vertex shader.
+
+#### Fragment Shader
+Main focus is to change the appearance in fluid like rendering that can destinguish between very high and very low densities. This can be archieved with different steps: 
+1. The appearance is changed such that the gl_primitive point is rendered as circle and not as square. All parts of the fragment that are not within this circle are ignored. (Line 19-23)
+2. A linear interpolation between the initial density and the final density is done based on t. (line 25-29)
+3. Based on the density a color is calculated. (line 30)
+4. The fragment is colored and the alpha is calculated based on the position of the primitive (gets less alpha on the outside to simulate a blur). (line 33) This might be different for the fluidrendering. The final alpha is based on the alpha setting in the gui. Default is alpha_add (see: https://doc.babylonjs.com/features/featuresDeepDive/materials/using/blendModes).
+
+**Depth** is using the *depth.fragment.fx to calculate a proper depth that can be logarithmic if wanted. The depthBuffer can be used in the postprocessing, e.g. fluidrendering and is normalized between 0 and 1 based on the farplane.
