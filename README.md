@@ -1,8 +1,7 @@
 # SpaceWalk-webapp
 
-# GUI
+The frontend GUI is asynchronous and can be controlled interactively at will. 
 
-The frontend is asynchronous and can be controlled interactively at will. \
 The frontend utilizes a canvas from the index.ts, which is used by the engine. The engine allows different layers. One layer is responsible for representing the data, and the other holds the components from the GUI and is not affected by any shaders or postprocessing. 
 ## UI
 ![image](https://github.com/user-attachments/assets/8ad61c42-f3e2-409a-a6e1-b052d06aa049)
